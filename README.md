@@ -42,6 +42,8 @@ flowchart LR
 | Metasploitable2 | Intentionally vulnerable victim | Ubuntu 8.04 (custom) | `192.168.56.103` |
 
 > Environment build instructions (Phase 0) live in [`00-Environment-Setup/`](./00-Environment-Setup/README.md). **Do this before starting Lab 1.**
+>
+> **Log shipping note:** Metasploitable2 runs a 2008-era Ubuntu base too old for modern log-shipping agents (Filebeat, etc.) to run on. Labs that need its logs use its built-in **rsyslog** to forward events to a **Logstash** listener on the ELK-SIEM VM, which parses and forwards them to Elasticsearch. This is introduced in Lab 1 and reused in later labs.
 
 ## Repository Structure
 
