@@ -121,6 +121,25 @@ All commands in Part C are run **on this Ubuntu VM** (via this SSH session).
 
 We'll install **Elasticsearch** (storage/search engine) and **Kibana** (dashboards/UI). Logstash isn't needed yet — for these labs, log shipping is handled by **Filebeat** (lightweight shipper), installed per-lab when needed. For this lab course, we disable Elastic's built-in TLS/security layer (`xpack.security`) since this is an isolated offline lab, not production — this avoids certificate setup that would otherwise block beginners. This is called out explicitly so it's never mistaken for a production practice.
 
+### C.0 Enable Temporary Internet Access (Second NAT Adapter)
+
+Your ELK-SIEM VM's only network adapter is **Host-only (VMnet2)**, static IP `192.168.56.102` — correct for talking to Kali and Metasploitable2, but Host-only networks are deliberately isolated from the internet. `apt` needs internet access to download Elasticsearch/Kibana. Add a **second** adapter just for this:
+
+1. Shut down the VM: `sudo shutdown now`
+2. VMware → **ELK-SIEM → Settings → Add... → Network Adapter → Finish**
+3. Select the new adapter → set connection type to **NAT**
+4. Power the VM back on
+5. Verify you now have a second interface with an internet-routable IP (via DHCP) alongside your original static `ens33`:
+   ```bash
+   ip a
+   ping -c 3 8.8.8.8
+   ```
+
+Your original static IP (`192.168.56.102` on `ens33`) is untouched — this NAT adapter is purely for package installation. Keep it attached; there's no harm leaving it on for the rest of the course, but it's not part of the "lab network" the other VMs communicate over.
+
+> 📸 **CAPTURE THIS:** Screenshot of `ip a` showing both interfaces (static Host-only + DHCP NAT).
+> Save as `00-03b-elk-dual-network-adapters.png` → `![ELK dual network adapters](media/00-03b-elk-dual-network-adapters.png)`
+
 ### C.1 Prerequisites
 
 ```bash
@@ -275,7 +294,7 @@ ifconfig eth0
 
 Confirm it now shows `192.168.56.103`.
 
-> **Security note:** Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure.
+> **Security note:** Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure. Unlike the ELK-SIEM VM, **do not** add a NAT adapter to this machine and **do not** run `apt update`/`apt upgrade` on it — patching it would remove the very vulnerabilities these labs depend on.
 
 ---
 
@@ -318,6 +337,7 @@ Keep this handy — every lab from now on refers back to these three addresses:
 
 - **Kibana won't load in browser:** confirm Elasticsearch is up first (`curl http://192.168.56.102:9200`) — Kibana depends on it and will refuse to serve until Elasticsearch answers. Check `sudo systemctl status elasticsearch kibana`.
 - **Elasticsearch fails to start / exits immediately:** almost always low memory. Check `sudo journalctl -u elasticsearch -n 50` — if you see OOM-related errors, increase the VM's RAM or cap the JVM heap in `/etc/elasticsearch/jvm.options.d/heap.options` (e.g. `-Xms1g` / `-Xmx1g`).
+- **`apt update` fails with "Temporary failure resolving..." :** your VM's only adapter is Host-only, which has no internet route by design. Add a second NAT adapter (see Part C.0) — keep the original Host-only static IP untouched.
 - **Can't ping between VMs:** almost always a network adapter mismatch — re-check Part A/B.2/D.2, all three VMs must use the exact same VMware network setting.
 - **Metasploitable2 network changes don't stick after reboot:** confirm you edited `/etc/network/interfaces` (not a Netplan file — this OS predates Netplan) and ran the `/etc/init.d/networking restart` command, not `netplan apply`.
 
