@@ -186,13 +186,22 @@ Edit the config:
 sudo nano /etc/elasticsearch/elasticsearch.yml
 ```
 
-Find/set these lines (add if missing):
+**Note on Elasticsearch 8.x:** the installer automatically appends a block near the bottom of this file titled `----- BEGIN SECURITY AUTO CONFIGURATION -----` containing TLS certificate paths and enrollment settings. This is normal — every 8.x install does this. For this lab, we replace that entire block, since managing certificates adds setup complexity with no benefit on an isolated training network.
+
+**Delete everything** from `#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------` through `#----------------------- END SECURITY AUTO CONFIGURATION -------------------------` (both marker lines included), and type this in its place:
 
 ```yaml
 network.host: 192.168.56.102
+http.port: 9200
 discovery.type: single-node
+
 xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
 ```
+
+Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
 Start it:
 
