@@ -188,9 +188,13 @@ sudo nano /etc/elasticsearch/elasticsearch.yml
 
 **Note on Elasticsearch 8.x:** the installer automatically appends a block near the bottom of this file titled `----- BEGIN SECURITY AUTO CONFIGURATION -----` containing TLS certificate paths and enrollment settings. This is normal — every 8.x install does this. For this lab, we replace that entire block, since managing certificates adds setup complexity with no benefit on an isolated training network.
 
-**Delete everything** from `#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------` through `#----------------------- END SECURITY AUTO CONFIGURATION -------------------------` (both marker lines included), and type this in its place:
+**Delete everything** from `#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------` through `#----------------------- END SECURITY AUTO CONFIGURATION -------------------------` (both marker lines included).
+
+The rest of the file is almost entirely comments (lines starting with `#`) — leave those as they are. You only need to make sure these **active** (non-`#`) lines exist somewhere in the file. The safest approach: select the entire file contents in nano (or just delete everything) and replace it with exactly this:
 
 ```yaml
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
 network.host: 192.168.56.102
 http.port: 9200
 discovery.type: single-node
@@ -200,6 +204,8 @@ xpack.security.enrollment.enabled: false
 xpack.security.http.ssl.enabled: false
 xpack.security.transport.ssl.enabled: false
 ```
+
+> ⚠️ **Common mistake:** if you only delete the security auto-config block and leave the commented template above it, `path.data` and `path.logs` remain commented out (`#path.data: ...`) and Elasticsearch will fall back to writing inside `/usr/share/elasticsearch/data`, which isn't writable by the `elasticsearch` user — it will crash with `AccessDeniedException`. Replacing the whole file with the block above avoids this entirely.
 
 Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
