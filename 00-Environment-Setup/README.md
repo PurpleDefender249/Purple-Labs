@@ -129,8 +129,27 @@ Your ELK-SIEM VM's only network adapter is **Host-only (VMnet2)**, static IP `19
 2. VMware → **ELK-SIEM → Settings → Add... → Network Adapter → Finish**
 3. Select the new adapter → set connection type to **NAT**
 4. Power the VM back on
-5. Verify you now have a second interface with an internet-routable IP (via DHCP) alongside your original static `ens33`:
+5. **Important:** back in Part B.4 you replaced the entire Netplan config to add the static IP on `ens33`. That file has no entry for this new adapter, so Netplan leaves it down by default — it won't pick up an address on its own. Add it explicitly:
    ```bash
+   sudo nano /etc/netplan/00-installer-config.yaml
+   ```
+   Make sure the file contains **both** interfaces:
+   ```yaml
+   network:
+     version: 2
+     ethernets:
+       ens33:
+         dhcp4: no
+         addresses: [192.168.56.102/24]
+         nameservers:
+           addresses: [8.8.8.8]
+       ens37:
+         dhcp4: yes
+   ```
+   (Confirm your new adapter's actual name via `ip a` first — it may not be exactly `ens37`.)
+6. Apply and verify:
+   ```bash
+   sudo netplan apply
    ip a
    ping -c 3 8.8.8.8
    ```
