@@ -147,6 +147,16 @@ SSH or console into Metasploitable2 (`msfadmin` / `msfadmin`) for this part.
 
 ### 4.1 Edit rsyslog Configuration
 
+**Known issue:** if you connect via SSH from Kali (rather than the VMware console), `nano` may fail with `Error opening terminal: xterm-256color`. This happens because Metasploitable2's 2008-era terminfo database has no entry for the modern terminal type your SSH session passes through. Fix it for this session:
+
+```bash
+export TERM=xterm
+```
+
+(If that alone doesn't resolve it, try `export TERM=vt100` instead.)
+
+Then:
+
 ```bash
 sudo nano /etc/rsyslog.conf
 ```
