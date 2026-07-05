@@ -330,6 +330,39 @@ Confirm it now shows `192.168.56.103`.
 
 > **Security note:** Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure. Unlike the ELK-SIEM VM, **do not** add a NAT adapter to this machine and **do not** run `apt update`/`apt upgrade` on it — patching it would remove the very vulnerabilities these labs depend on.
 
+### D.5 Known Issue: SSH Connections from Kali Will Fail by Default
+
+Metasploitable2's SSH server only offers a legacy host-key type (`ssh-rsa`). Modern OpenSSH clients (including Kali 2025.3's) reject this by default for security reasons, so a plain `ssh msfadmin@192.168.56.103` will fail with `Unable to negotiate... no matching host key type found`. This isn't a network issue — it's a client compatibility policy, and it will affect every future lab that needs interactive SSH into this VM.
+
+**Note:** Metasploitable2's SSH banner also lists `ssh-dss`, but don't add that to any config — modern OpenSSH (9.8+) has removed DSA support entirely, and including `ssh-dss` in an option string causes a hard parse error (`Bad key types`). Allowing `ssh-rsa` alone is sufficient.
+
+**Fix it once, permanently, from Kali:**
+
+```bash
+nano ~/.ssh/config
+```
+
+Add:
+
+```
+Host metasploitable
+    HostName 192.168.56.103
+    User msfadmin
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+```
+
+Save and exit. From now on, connect with:
+
+```bash
+ssh metasploitable
+```
+
+instead of typing the full `ssh msfadmin@192.168.56.103` — the config applies the compatibility flag automatically.
+
+> 📸 **CAPTURE THIS:** Terminal showing a successful `ssh metasploitable` login using this config.
+> Save as `00-09-ssh-metasploitable-legacy-fix.png` → `![SSH legacy compatibility fix working](media/00-09-ssh-metasploitable-legacy-fix.png)`
+
 ---
 
 ## Part E — Verify All Three Machines Can See Each Other
@@ -385,6 +418,7 @@ Keep this handy — every lab from now on refers back to these three addresses:
 - [ ] Elasticsearch installed, responds on port 9200
 - [ ] Kibana installed, loads in browser on port 5601
 - [ ] Metasploitable2 imported, static IP `192.168.56.103`
+- [ ] SSH legacy-algorithm fix applied (`~/.ssh/config` alias `metasploitable` works)
 - [ ] All 3 machines ping each other successfully
 - [ ] All 8 screenshots captured and named per the convention above
 

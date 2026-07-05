@@ -56,11 +56,13 @@ sudo apt install -y hydra
 
 ## Part 2 — Confirm the SSH Target Is Reachable
 
-From Kali, test a manual login to make sure the target is alive before automating anything:
+From Kali, test a manual login to make sure the target is alive before automating anything. This uses the `metasploitable` SSH alias set up in Phase 0 (Part D.5) to work around Metasploitable2's legacy SSH algorithms:
 
 ```bash
-ssh msfadmin@192.168.56.103
+ssh metasploitable
 ```
+
+(If you skipped that step, see [Phase 0 Part D.5](../00-Environment-Setup/README.md) — a plain `ssh msfadmin@192.168.56.103` will fail with a host-key negotiation error on modern Kali.)
 
 Type `yes` to accept the host key, enter password `msfadmin`, confirm you land at a shell prompt, then `exit`.
 
@@ -184,10 +186,10 @@ This step confirms the entire chain (Metasploitable2 → Logstash → Elasticsea
 
 ### 5.1 Generate a Test Event
 
-From Kali, deliberately fail one SSH login to the target:
+From Kali, deliberately fail one SSH login to the target (using the `metasploitable` alias from Phase 0 Part D.5):
 
 ```bash
-ssh msfadmin@192.168.56.103
+ssh metasploitable
 ```
 
 Enter an obviously wrong password (e.g. `wrongpass123`), let it reject you, then press `Ctrl+C`.
