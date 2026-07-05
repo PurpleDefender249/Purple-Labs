@@ -371,6 +371,54 @@ You should see a burst of failed-login events clustered in the exact timeframe y
 
 This is the core "detection engineering" deliverable of the lab — turning a pattern you can see into a rule that fires automatically.
 
+### 8.0 Configure Kibana's Alerting Encryption Key (One-Time Setup)
+
+Before Kibana's Alerting feature can be used at all, it needs an encryption key configured — this is required regardless of whether authentication/security is enabled, since alert rules and connectors store encrypted saved objects. If you go straight to **Stack Management → Rules → Create rule** without this, you'll see "Additional setup required: You must configure an encryption key to use Alerting."
+
+On ELK-SIEM:
+
+```bash
+cd /usr/share/kibana
+sudo bin/kibana-encryption-keys generate
+```
+
+This prints three lines like:
+
+```yaml
+xpack.encryptedSavedObjects.encryptionKey: <random-string>
+xpack.reporting.encryptionKey: <random-string>
+xpack.security.encryptionKey: <random-string>
+```
+
+Add those exact three lines (with their real generated values) to the bottom of Kibana's config:
+
+```bash
+sudo nano /etc/kibana/kibana.yml
+```
+
+Save, then restart:
+
+```bash
+sudo systemctl restart kibana
+```
+
+Wait ~20–30 seconds, then reload the Rules page — the warning should be gone.
+
+> 📸 **CAPTURE THIS:** Terminal showing the `kibana-encryption-keys generate` command running (crop/blur the actual key values if concerned about publishing them, though risk is low on an isolated lab network).
+> Save as `lab01-10b-kibana-encryption-keys.png` → `![Kibana encryption keys configured](media/lab01-10b-kibana-encryption-keys.png)`
+
+If the connector picker later shows options grayed out as "Platinum license required," activate Elasticsearch's free 30-day trial license, which unlocks them (this is unrelated to the encryption key, but both are one-time setup steps for Alerting):
+
+```bash
+curl -X POST "http://192.168.56.102:9200/_license/start_trial?acknowledge=true&pretty"
+sudo systemctl restart kibana
+```
+
+> 📸 **CAPTURE THIS:** Terminal showing the trial license activation response (`"trial_was_started": true`).
+> Save as `lab01-10c-elasticsearch-trial-license.png` → `![Trial license activated](media/lab01-10c-elasticsearch-trial-license.png)`
+
+### 8.1 Create the Rule
+
 1. Hamburger menu → **Stack Management → Rules → Create rule**
 2. Rule type: **Elasticsearch query** (a built-in Kibana rule type — no extra plugin needed)
 3. Index: `ssh-auth-logs-*`
@@ -378,14 +426,14 @@ This is the core "detection engineering" deliverable of the lab — turning a pa
 5. Threshold: **Count is above `5`**
 6. Time window: **1 minute**
 7. Check every: **1 minute**
-8. Action: add a **Server log** connector (built-in, no email/SMTP setup needed for this lab) — message body: `SSH brute-force suspected: {{context.value}} failed logins in the last minute.`
+8. **Skip "Add action."** In some Kibana versions, the connector picker for generic Stack Rules only exposes a couple of unrelated connector types (e.g. Cases) regardless of license — a known quirk, not something you did wrong. An action isn't required to prove the detection works: a rule with zero actions still evaluates on schedule and shows as **Active** in the Alerts tab when its condition is met, which is exactly what we check in Part 8.2. (Real detection engineering often works the same way — build and tune the logic first, wire up notifications once it's trusted.)
 9. Name the rule: **SSH Brute-Force Threshold Alert**
 10. **Save**
 
 > 📸 **CAPTURE THIS:** The rule configuration screen showing the threshold condition (step 5–7) before saving.
 > Save as `lab01-10-alert-rule-config.png` → `![Alert rule configuration](media/lab01-10-alert-rule-config.png)`
 
-### 8.1 Confirm It Fired
+### 8.2 Confirm It Fired
 
 Re-run the Hydra attack from Part 6 once more (same command) to trigger the rule live, then:
 
@@ -450,6 +498,7 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 | `lab01-07-hydra-attack-success.png` | Hydra brute-force attack completing successfully |
 | `lab01-08-discover-failed-login-burst.png` | Attack visible as a burst in Discover |
 | `lab01-09-lens-failed-logins-chart.png` | Finished Lens visualization |
+| `lab01-10b-kibana-encryption-keys.png` | Kibana alerting encryption keys configured |
 | `lab01-10-alert-rule-config.png` | Alert rule threshold configuration |
 | `lab01-11-alert-fired-history.png` | Alert firing in execution history |
 
@@ -459,6 +508,7 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 - **Never use `setcap` on Logstash's bundled `java` binary to allow binding port 514 directly.** It will cause Java to fail with `error while loading shared libraries: libjli.so: cannot open shared object file`, because Linux's dynamic linker strips relative library paths from any binary that has file capabilities set. Use the iptables redirect from Part 3.4 instead.
 - **`sudo /etc/init.d/rsyslog restart` reports "command not found":** this Metasploitable2 build uses `sysklogd`, not `rsyslog`, despite `/etc/rsyslog.conf` existing as an unused leftover file. Confirm the real daemon with `ps aux | grep -i syslog` (look for `/sbin/syslogd`), and edit `/etc/syslog.conf` instead — see Part 4.
 - **`nano` fails with `Error opening terminal: xterm-256color` on Metasploitable2 over SSH:** run `export TERM=xterm` (or `export TERM=vt100`) first — its 2008-era terminfo database doesn't recognize modern terminal types.
+- **Connector picker for a Stack Rule only shows Cases / Observability AI Assistant, even on a trial license:** this is a Kibana quirk where built-in connectors (Server log, Index, etc.) aren't tagged for the generic "Stack Rules" feature area in some versions. Skip adding an action entirely — see Part 8.1 step 8 — the rule still evaluates and shows "Active" status without one.
 - **SSH from Kali fails with "no matching host key type found":** see Phase 0 Part D.5 — add the `metasploitable` alias to `~/.ssh/config` with `HostKeyAlgorithms +ssh-rsa` and `PubkeyAcceptedAlgorithms +ssh-rsa`.
 - **Hydra fails with a `kex error` (host key, MAC, or cipher mismatch), even after fixing plain SSH access:** Hydra uses its own bundled `libssh`, not your OpenSSH client — the `metasploitable` alias doesn't apply to it. Add the separate `Host 192.168.56.103` block from Part 6.2 to `~/.ssh/config`, matching Hydra's connection by raw IP.
 - **Hydra reports all attempts failed, including the real password:** double-check you typed `msfadmin` correctly in your wordlist, and that you haven't locked yourself into a stale SSH host-key mismatch (rare on a lab network, but `ssh-keygen -R 192.168.56.103` clears it if needed).
