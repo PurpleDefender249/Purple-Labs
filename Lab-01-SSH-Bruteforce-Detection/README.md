@@ -446,9 +446,12 @@ Hamburger menu → **Stack Management → Rules** → click into **SSH Brute-For
 
 ## Part 9 — Document the Finding
 
-This is the write-up a real analyst would produce. A ready-to-fill template is provided as a **separate file** in this lab's folder: [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md).
+This is the write-up a real analyst would produce. A ready-to-fill template is provided as a **separate file** in this lab's folder — pick whichever format you prefer to edit:
 
-Copy it (e.g. to `WRITEUP.md` in this same folder) and fill in every bracketed field with your actual data — timestamps, screenshot references, and your own observations from working through this lab. This keeps your finished investigation write-up as its own deliverable, separate from this instructional manual.
+- [`Lab1-Investigation-Writeup-Template.docx`](./Lab1-Investigation-Writeup-Template.docx) — formatted Word document (recommended if editing outside GitHub)
+- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — plain Markdown version (recommended if keeping the write-up in the repo itself)
+
+Fill in every placeholder with your actual data — timestamps, screenshot references, and your own observations from working through this lab. This keeps your finished investigation write-up as its own deliverable, separate from this instructional manual.
 
 ---
 
