@@ -446,41 +446,9 @@ Hamburger menu → **Stack Management → Rules** → click into **SSH Brute-For
 
 ## Part 9 — Document the Finding
 
-This is the write-up a real analyst would produce. Add a new section at the bottom of this lab's README (below the Completion Checklist) titled **"Investigation Write-Up"**, using this template:
+This is the write-up a real analyst would produce. A ready-to-fill template is provided as a **separate file** in this lab's folder: [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md).
 
-```markdown
-## Investigation Write-Up
-
-**Date/Time of Attack:** [fill in from your Hydra run timestamp]
-**Source:** 192.168.56.101 (Kali — simulated attacker)
-**Target:** 192.168.56.103 (Metasploitable2)
-**Technique:** SSH dictionary brute-force (Hydra, 7-entry wordlist, 4 threads)
-
-### Timeline
-| Time | Event |
-|---|---|
-| [ts] | First failed login attempt observed |
-| [ts] | Failed-login count crosses threshold (5/min) |
-| [ts] | Alert rule fires |
-| [ts] | Successful login recorded (`msfadmin` password matched) |
-
-### Detection Logic
-Elasticsearch query rule on index `ssh-auth-logs-*`, counting documents matching
-`message: "Failed password"`, threshold >5 events per 1-minute window.
-
-### False Positive Considerations
-A legitimate user mistyping their password 2–3 times would not cross this threshold.
-Environments with many simultaneous legitimate users may need a per-source-IP
-threshold instead of a global one — worth calling out as a tuning consideration
-rather than something this lab solves outright.
-
-### Evidence
-(embed your screenshots from this lab here, e.g. `![Hydra attack](media/lab01-07-hydra-attack-success.png)`)
-
-### Recommendation
-Rate-limit or temporarily lock accounts after repeated failures (e.g. `fail2ban`),
-and consider disabling direct password auth on SSH in favor of key-based auth.
-```
+Copy it (e.g. to `WRITEUP.md` in this same folder) and fill in every bracketed field with your actual data — timestamps, screenshot references, and your own observations from working through this lab. This keeps your finished investigation write-up as its own deliverable, separate from this instructional manual.
 
 ---
 
@@ -525,6 +493,6 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 - [ ] Lens visualization built showing the attack
 - [ ] Threshold alert rule created and confirmed firing
 - [ ] All 11 screenshots captured and named per convention
-- [ ] Investigation write-up section added
+- [ ] Investigation write-up completed using `WRITEUP-TEMPLATE.md`
 
 Once every box is checked, you're ready for **Lab 2 — Port Scan Detection Engineering Lab**.
