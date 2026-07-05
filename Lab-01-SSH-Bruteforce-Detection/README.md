@@ -17,7 +17,7 @@
 | Tool | Role | Runs on |
 |---|---|---|
 | Hydra | Brute-force attack tool | Kali |
-| rsyslog | Forwards auth logs off the old victim box | Metasploitable2 (already installed) |
+| rsyslog/sysklogd | Forwards auth logs off the old victim box | Metasploitable2 (already installed) |
 | Logstash | Receives forwarded syslog, parses it, sends to Elasticsearch | ELK-SIEM |
 | Kibana | Visualization + alerting | ELK-SIEM |
 
@@ -25,8 +25,9 @@
 
 ```mermaid
 flowchart LR
-    K["Kali\nruns Hydra"] -- "SSH brute-force :22" --> M["Metasploitable2\nsshd + rsyslog"]
-    M -- "auth logs forwarded\nover syslog :5514" --> L["Logstash\non ELK-SIEM"]
+    K["Kali\nruns Hydra"] -- "SSH brute-force :22" --> M["Metasploitable2\nsshd + sysklogd"]
+    M -- "auth logs forwarded\nover syslog UDP :514" --> R["iptables redirect\non ELK-SIEM\n514 -> 5514"]
+    R --> L["Logstash\nlistening on :5514"]
     L -- "parsed events" --> E["Elasticsearch"]
     E --> KB["Kibana\nDiscover / Lens / Alerting"]
 ```
@@ -86,7 +87,7 @@ sudo apt install -y logstash
 
 ### 3.2 Create a Syslog Input Pipeline
 
-We use port `5514` (not the standard `514`) because privileged ports below 1024 need extra permissions Logstash doesn't have by default — using a high port avoids that entirely.
+We use port `5514` rather than the standard syslog port `514`. This is a deliberate design choice, not just a convenience: `514` is a *privileged* port (anything below 1024), and only root can normally bind to it. Logstash runs as an unprivileged `logstash` user, and — importantly — **do not use `setcap` to try to grant this permission to Logstash's bundled Java binary.** Linux's dynamic linker strips relative library search paths from any binary that has file capabilities set, which breaks Java's ability to find its own runtime libraries (`libjli.so`) and crashes it on every startup. Part 3.4 below covers the correct way to still receive traffic on `514`.
 
 ```bash
 sudo nano /etc/logstash/conf.d/ssh-auth-pipeline.conf
@@ -139,13 +140,41 @@ You should see `5514` listed under both UDP and TCP.
 > 📸 **CAPTURE THIS:** Terminal showing the `ss -tulpn` output with port 5514 listening.
 > Save as `lab01-03-logstash-listening.png` → `![Logstash listening on 5514](media/lab01-03-logstash-listening.png)`
 
+### 3.4 Redirect Port 514 to 5514 (Kernel-Level, No Special Permissions Needed)
+
+Metasploitable2's logging daemon (see Part 4) can only send to the standard port `514`, but Logstash is listening on `5514`. Rather than touching Logstash's permissions, we redirect incoming traffic on `514` to `5514` at the network level using `iptables` — this needs no capability changes on any application at all.
+
+```bash
+sudo iptables -t nat -A PREROUTING -p udp --dport 514 -j REDIRECT --to-port 5514
+sudo ufw allow 514/udp
+```
+
+Make this survive a reboot:
+
+```bash
+sudo apt install -y iptables-persistent
+```
+
+When prompted **"Save current IPv4 rules?"**, choose **Yes**. (You can say No to the IPv6 prompt — this lab only uses IPv4.)
+
+> 📸 **CAPTURE THIS:** Terminal showing the `iptables` command and the `iptables-persistent` install/save prompt.
+> Save as `lab01-03b-iptables-port-redirect.png` → `![iptables port redirect configured](media/lab01-03b-iptables-port-redirect.png)`
+
 ---
 
 ## Part 4 — Configure Metasploitable2 to Forward Auth Logs
 
-SSH or console into Metasploitable2 (`msfadmin` / `msfadmin`) for this part.
+SSH into Metasploitable2 (`ssh metasploitable`, using the alias from Phase 0 Part D.5) for this part.
 
-### 4.1 Edit rsyslog Configuration
+**Important:** despite the filename similarity, do **not** edit `/etc/rsyslog.conf` on this machine. This particular Metasploitable2 build actually runs the older **`sysklogd`** daemon, which reads a completely different file (`/etc/syslog.conf`) and uses simpler forwarding syntax (UDP only, no custom ports). Confirm which daemon is actually running before editing anything:
+
+```bash
+ps aux | grep -i syslog
+```
+
+You should see `/sbin/syslogd` in the output — this confirms `sysklogd`, not `rsyslog`.
+
+### 4.1 Edit the Logging Configuration
 
 **Known issue:** if you connect via SSH from Kali (rather than the VMware console), `nano` may fail with `Error opening terminal: xterm-256color`. This happens because Metasploitable2's 2008-era terminfo database has no entry for the modern terminal type your SSH session passes through. Fix it for this session:
 
@@ -158,35 +187,34 @@ export TERM=xterm
 Then:
 
 ```bash
-sudo nano /etc/rsyslog.conf
+sudo nano /etc/syslog.conf
 ```
 
-Scroll to the bottom and add this line:
+Find this existing line near the top:
 
 ```
-auth,authpriv.*    @@192.168.56.102:5514
+auth,authpriv.*                 /var/log/auth.log
 ```
 
-(The double `@@` means TCP — more reliable for a lab than UDP's single `@`.)
+Add a second line directly beneath it (keep the original — this way logs still write locally too, in addition to forwarding):
+
+```
+auth,authpriv.*                 /var/log/auth.log
+auth,authpriv.*                 @192.168.56.102
+```
+
+A single `@` is correct here — classic `sysklogd` only supports UDP forwarding, and has no `@@` (TCP) syntax and no way to specify a custom port. It always sends to the destination's port `514`, which is why Part 3.4 set up a redirect from `514` to Logstash's actual listener on `5514`.
 
 Save and exit.
 
-### 4.2 Restart rsyslog
+### 4.2 Restart the Logging Daemon
 
 ```bash
-sudo /etc/init.d/rsyslog restart
+sudo /etc/init.d/sysklogd restart
 ```
 
-If that command errors with "not found," this OS build uses `sysklogd` instead — check with:
-
-```bash
-ls /etc/init.d/ | grep -i log
-```
-
-and restart whichever logging service is listed instead.
-
-> 📸 **CAPTURE THIS:** Terminal showing the edited bottom of `/etc/rsyslog.conf` (use `tail -5 /etc/rsyslog.conf` for a clean screenshot) and the successful restart command.
-> Save as `lab01-04-rsyslog-forwarding-config.png` → `![rsyslog forwarding configured](media/lab01-04-rsyslog-forwarding-config.png)`
+> 📸 **CAPTURE THIS:** Terminal showing the edited top of `/etc/syslog.conf` (use `head -10 /etc/syslog.conf` for a clean screenshot) and the successful restart command.
+> Save as `lab01-04-syslog-forwarding-config.png` → `![syslog forwarding configured](media/lab01-04-syslog-forwarding-config.png)`
 
 ---
 
@@ -389,7 +417,8 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 | `lab01-01-hydra-version-check.png` | Hydra installed/verified |
 | `lab01-02-manual-ssh-login.png` | Manual SSH login to confirm target reachable |
 | `lab01-03-logstash-listening.png` | Logstash listening on port 5514 |
-| `lab01-04-rsyslog-forwarding-config.png` | rsyslog forwarding rule on Metasploitable2 |
+| `lab01-03b-iptables-port-redirect.png` | iptables redirect from 514 to 5514 configured |
+| `lab01-04-syslog-forwarding-config.png` | syslog forwarding rule on Metasploitable2 (sysklogd) |
 | `lab01-05-elasticsearch-first-event.png` | First test event confirmed in Elasticsearch |
 | `lab01-06-kibana-discover-first-event.png` | First event visible in Kibana Discover |
 | `lab01-07-hydra-attack-success.png` | Hydra brute-force attack completing successfully |
@@ -400,8 +429,11 @@ and consider disabling direct password auth on SSH in favor of key-based auth.
 
 ## Troubleshooting
 
-- **No events reaching Elasticsearch at all:** check Logstash is actually running (`sudo systemctl status logstash`) and listening (`sudo ss -tulpn | grep 5514`). Then check Metasploitable2 can reach ELK-SIEM on that port: from Metasploitable2, `telnet 192.168.56.102 5514` should connect (Ctrl+], `quit` to exit).
-- **rsyslog restart fails:** confirm the service name with `ls /etc/init.d/ | grep -i log` — older systems sometimes name it `sysklogd`.
+- **No events reaching Elasticsearch at all:** check Logstash is actually running (`sudo systemctl status logstash`) and listening on 5514 (`sudo ss -tulpn | grep 5514`). Then confirm the iptables redirect is in place (`sudo iptables -t nat -L PREROUTING -n`) and that Metasploitable2 can reach ELK-SIEM on port 514: from Metasploitable2, `telnet 192.168.56.102 514` should attempt a connection (Ctrl+], `quit` to exit — a refused/timeout response here means check the redirect and firewall rule again).
+- **Never use `setcap` on Logstash's bundled `java` binary to allow binding port 514 directly.** It will cause Java to fail with `error while loading shared libraries: libjli.so: cannot open shared object file`, because Linux's dynamic linker strips relative library paths from any binary that has file capabilities set. Use the iptables redirect from Part 3.4 instead.
+- **`sudo /etc/init.d/rsyslog restart` reports "command not found":** this Metasploitable2 build uses `sysklogd`, not `rsyslog`, despite `/etc/rsyslog.conf` existing as an unused leftover file. Confirm the real daemon with `ps aux | grep -i syslog` (look for `/sbin/syslogd`), and edit `/etc/syslog.conf` instead — see Part 4.
+- **`nano` fails with `Error opening terminal: xterm-256color` on Metasploitable2 over SSH:** run `export TERM=xterm` (or `export TERM=vt100`) first — its 2008-era terminfo database doesn't recognize modern terminal types.
+- **SSH from Kali fails with "no matching host key type found":** see Phase 0 Part D.5 — add the `metasploitable` alias to `~/.ssh/config` with `HostKeyAlgorithms +ssh-rsa` and `PubkeyAcceptedAlgorithms +ssh-rsa`.
 - **Hydra reports all attempts failed, including the real password:** double-check you typed `msfadmin` correctly in your wordlist, and that you haven't locked yourself into a stale SSH host-key mismatch (rare on a lab network, but `ssh-keygen -R 192.168.56.103` clears it if needed).
 - **Alert never fires even though Discover shows the burst:** confirm the rule's query field name matches exactly (`message`, not `Message`) and that the time window (1 minute) actually contains ≥5 events — Hydra with `-t 4 -f` can sometimes finish in under a minute across only 2–3 attempts if the real password is near the top of your list; add more decoy entries above `msfadmin` in your wordlist if this happens.
 

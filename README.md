@@ -43,7 +43,7 @@ flowchart LR
 
 > Environment build instructions (Phase 0) live in [`00-Environment-Setup/`](./00-Environment-Setup/README.md). **Do this before starting Lab 1.**
 >
-> **Log shipping note:** Metasploitable2 runs a 2008-era Ubuntu base too old for modern log-shipping agents (Filebeat, etc.) to run on. Labs that need its logs use its built-in **rsyslog** to forward events to a **Logstash** listener on the ELK-SIEM VM, which parses and forwards them to Elasticsearch. This is introduced in Lab 1 and reused in later labs.
+> **Log shipping note:** Metasploitable2 runs a 2008-era Ubuntu base too old for modern log-shipping agents (Filebeat, etc.) to run on. Labs that need its logs use its built-in classic syslog daemon (`sysklogd`, via `/etc/syslog.conf`) to forward events over UDP to port 514 on the ELK-SIEM VM, where an `iptables` rule redirects that traffic to a **Logstash** listener on port 5514 (Logstash can't bind port 514 directly without breaking Java's library loading — see Lab 1's troubleshooting section). Logstash then parses and forwards events to Elasticsearch. This is introduced in Lab 1 and reused in later labs.
 
 ## Repository Structure
 
