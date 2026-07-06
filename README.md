@@ -132,8 +132,8 @@ Capture a clean traffic baseline on the lab network, then run a mix of attacks f
 
 ## Progress Tracker
 
-- [ ] Phase 0 — Environment Setup (Kali + ELK VM + Metasploitable2)
-- [ ] Lab 1 — SSH Brute-Force Detection in ELK
+- [x] Phase 0 — Environment Setup (Kali + ELK VM + Metasploitable2)
+- [x] Lab 1 — SSH Brute-Force Detection in ELK
 - [ ] Lab 2 — Port Scan Detection Engineering Lab
 - [ ] Lab 3 — Reverse Shell Network Detection Study
 - [ ] Lab 4 — End-to-End SOC Investigation Simulation
