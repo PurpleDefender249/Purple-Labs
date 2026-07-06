@@ -230,6 +230,10 @@ sudo nmap -sU --top-ports 20 192.168.56.103
 nmap -Pn 192.168.56.103
 
 # Slow/stealthy timing template (spreads probes out to evade simple rate-based detection)
+# WARNING: -T0 ("paranoid") waits 5 minutes between each probe by default — 10 ports
+# can take 45+ minutes. This is expected, not a hang. Run in the background with
+# a trailing `&`, or substitute -T1 ("sneaky", ~15s between probes, a few minutes
+# total) if you want the same low-and-slow concept without the full wait.
 sudo nmap -sS -T0 --top-ports 10 192.168.56.103
 ```
 
