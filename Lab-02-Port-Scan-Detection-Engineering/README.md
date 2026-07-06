@@ -114,15 +114,7 @@ sudo /etc/init.d/sysklogd restart
 > 📸 **CAPTURE THIS:** Terminal showing `head -15 /etc/syslog.conf` with the new `kern.*` line, and the successful restart.
 > Save as `lab02-03-syslog-kern-forwarding.png` → `![Kernel log forwarding added](media/lab02-03-syslog-kern-forwarding.png)`
 
-### 2.3 Generate a Test Event
-
-From Kali, make a single ordinary connection to confirm the pipeline captures it (this also happens to be our first "benign traffic" data point for the false-positive tuning later):
-
-```bash
-curl http://192.168.56.103
-```
-
-(A connection-refused or an actual webpage response are both fine — either way, a SYN packet was sent and should be logged.)
+Hold off on generating a test event here — do it in Part 3.1 instead, **after** the Logstash pipeline is updated. Testing now would route the event through the old Lab 1 pipeline (no `port_scan` branch yet), landing it in `ssh-auth-logs-*` as an unparsed raw message instead of `portscan-logs-*`.
 
 ---
 
@@ -182,7 +174,15 @@ sleep 20
 sudo systemctl status logstash --no-pager
 ```
 
-### 3.1 Verify the Test Event Parsed Correctly
+### 3.1 Generate a Test Event and Verify It Parsed Correctly
+
+From Kali, make a single ordinary connection — this is both our pipeline test and our first "benign traffic" data point for the false-positive tuning later:
+
+```bash
+curl http://192.168.56.103
+```
+
+Then, back on ELK-SIEM:
 
 ```bash
 curl "http://192.168.56.102:9200/portscan-logs-*/_search?pretty"
@@ -363,7 +363,7 @@ As with Lab 1, use the standalone write-up template rather than writing directly
 ## Troubleshooting
 
 - **`nano` fails with `Error opening terminal` on Metasploitable2:** run `export TERM=xterm` first — see Lab 1 Part 4.1.
-- **No scan events reaching Elasticsearch:** confirm the iptables LOG rule exists (`sudo iptables -L INPUT -v -n`), that `kern.*` was added to `/etc/syslog.conf`, and that `sysklogd` was restarted after the edit.
+- **No scan events reaching Elasticsearch:** confirm the iptables LOG rule exists (`sudo iptables -L INPUT -v -n`), that `kern.*` was added to `/etc/syslog.conf`, and that `sysklogd` was restarted after the edit. Also check `ssh-auth-logs-*` for the event: if you tested before updating the Logstash pipeline in Part 3, that event was routed through the old pipeline and landed there instead — generate a fresh test event after the pipeline restart.
 - **Events arrive but `src_ip`/`dst_port` fields are empty (only raw `message` populated):** the grok pattern in Part 3 didn't match — compare your actual log line format (`sudo tail -5 /var/log/messages` on Metasploitable2) against the pattern and adjust field order if needed.
 - **UDP scan (`-sU`) takes a very long time or appears to hang:** this is normal — UDP scanning is inherently slow because Nmap must wait for ICMP "port unreachable" responses or timeouts for each port. `--top-ports 20` keeps it manageable for this lab; a full 65535-port UDP scan can take hours.
 - **Alert never shows "Active" despite a clear spike in Discover:** double check you're using the DSL/cardinality-based threshold (Part 8, step 5) rather than the basic document-count threshold — a basic count threshold will fire on *any* burst of traffic, not specifically a many-unique-ports burst, and won't reflect the actual detection logic this lab is teaching.
