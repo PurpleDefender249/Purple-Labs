@@ -4,6 +4,8 @@
 
 **Purpose:** Perform multiple Nmap reconnaissance scan types against a target, build SIEM detection logic to catch that reconnaissance, and deliberately tune it to avoid false-alarming on normal traffic. Unlike Lab 1, there's no existing log source for this — port scans don't write to any application log by default — so this lab starts by building the visibility itself.
 
+**Why this matters in real SOC work:** Reconnaissance is the very first stage of nearly every real intrusion — attackers scan before they exploit, almost without exception. A SOC that can reliably catch scanning activity gets an early warning before an actual breach attempt, which is enormously more valuable than only detecting the exploit itself. This lab also teaches a subtler, equally important real-world skill: building telemetry that doesn't exist yet. Most experienced SOC analysts will tell you that a large fraction of real detection engineering work isn't writing clever queries — it's realizing a data source is missing entirely and building the pipeline to create it, exactly as you'll do here with `iptables` logging.
+
 **What you'll learn:**
 - Why port scans are invisible to a SIEM by default, and how to create the missing telemetry
 - How to parse structured fields out of raw kernel firewall logs using Logstash `grok`

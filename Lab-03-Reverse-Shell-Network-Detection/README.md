@@ -4,6 +4,8 @@
 
 **Purpose:** Generate reverse shells using two different methods, capture the resulting traffic in Wireshark, and learn to identify the network-level fingerprints of shell activity — without relying on any signature, log, or alert. This is a skill gap most junior analysts have: they can read a SIEM dashboard, but freeze when handed a raw packet capture.
 
+**Why this matters in real SOC work:** Reverse shells are the backbone of remote access in real intrusions — almost every hands-on-keyboard compromise, from opportunistic malware to targeted APT activity, involves some form of shell being called back to attacker infrastructure. Signature-based tools (antivirus, IDS rulesets) are routinely evaded by trivial payload changes, but the *behavioral* indicators this lab teaches — direction of connection, non-standard ports, interactive packet timing — are far harder for an attacker to hide, because they're a consequence of what a reverse shell fundamentally *is*, not how it happens to be built. Being comfortable in Wireshark, rather than only in a SIEM's UI, is what separates analysts who can work a genuinely novel incident from those who can only follow a runbook.
+
 **What you'll learn:**
 - Why a reverse shell's *direction* of connection is itself a red flag, independent of payload content
 - How to reconstruct a full interactive shell session from a packet capture (`Follow TCP Stream`)

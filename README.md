@@ -16,6 +16,8 @@ Every lab follows the same loop:
 
 You will run real attack techniques from Kali Linux against real targets (a dedicated victim VM), watch the resulting evidence arrive in an ELK Stack SIEM, build a detection (query, alert, or dashboard) for it, and write up the finding the way a SOC analyst would.
 
+Each lab also opens with a **"Why this matters in real SOC work"** note tying the exercise to the actual detection-engineering or incident-response problem it mirrors — this course is built to feel like early-career SOC work, not just a checklist of tool commands.
+
 No videos are required — every lab is fully documented in text, with exact commands, expected output, and clearly marked points where **you** capture a screenshot so the write-up has real visual evidence.
 
 ## Lab Environment Architecture
@@ -135,7 +137,7 @@ Capture a clean traffic baseline on the lab network, then run a mix of attacks f
 - [x] Phase 0 — Environment Setup (Kali + ELK VM + Metasploitable2)
 - [x] Lab 1 — SSH Brute-Force Detection in ELK
 - [x] Lab 2 — Port Scan Detection Engineering Lab
-- [ ] Lab 3 — Reverse Shell Network Detection Study
+- [x] Lab 3 — Reverse Shell Network Detection Study
 - [ ] Lab 4 — End-to-End SOC Investigation Simulation
 - [ ] Lab 5 — Custom Log-Based Intrusion Detection Script
 - [ ] Lab 6 — Beaconing Traffic Detection Lab

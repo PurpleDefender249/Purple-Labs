@@ -4,6 +4,8 @@
 
 **Purpose:** Simulate a real SSH credential-stuffing attack against a Linux target, get the resulting authentication logs into your SIEM, and build a detection that fires based on failed-login velocity — the same pattern real SOC teams use to catch brute-force and password-spray attacks.
 
+**Why this matters in real SOC work:** SSH brute-forcing is one of the single most common attack types seen against any internet-facing Linux server — internet-wide scanning bots attempt this against nearly every exposed IP within hours of it going live. Threshold-based authentication alerting like the one you'll build here is a near-universal first detection rule in any SOC's rule set, precisely because credential attacks are so common and so cheap for attackers to run at scale. Tuning the threshold correctly (not so sensitive it fires on a typo, not so loose it misses a real attack) is a skill you'll use on nearly every detection you ever build, not just this one.
+
 **What you'll learn:**
 - How SSH authentication failures actually look in raw Linux logs
 - How to get logs from a machine too old for modern log-shipping agents into a modern SIEM (a real-world problem, not just a lab contrivance)
