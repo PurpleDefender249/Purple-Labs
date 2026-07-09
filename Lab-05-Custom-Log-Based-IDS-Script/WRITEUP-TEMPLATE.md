@@ -22,7 +22,7 @@ Static for this lab — copy as-is from what's already in the document.
 
 ## Detection Logic / Design Decisions / Recommendation
 
-These sections are conceptual — restate the algorithm you actually implemented (polling interval, window, threshold, cooldown) as documented in Part 2/3 of the lab. No lookup needed, just confirm your write-up matches your actual script's constants.
+These sections are conceptual — restate the algorithm you actually implemented (polling interval, window, threshold, cooldown) as documented in Part 2/3 of the lab. Note the threshold is `3`, not the more intuitive `5` — this was deliberately lowered after confirming this legacy target's `sshd`/PAM logging doesn't produce one discrete log line per attempt (see Part 5's note on this). Worth mentioning in your write-up as a real finding, not just a script detail.
 
 ## Evidence
 

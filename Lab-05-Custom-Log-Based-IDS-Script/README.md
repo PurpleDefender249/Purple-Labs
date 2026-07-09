@@ -76,7 +76,7 @@ Before writing code, understand the algorithm in plain terms, since this is the 
 1. **Poll**: every 10 seconds, ask Elasticsearch for any `ssh-auth-logs-*` documents with `event_outcome: failure` that arrived since the last time you checked.
 2. **Parse**: unlike Lab 2's port-scan pipeline, Lab 1's pipeline never extracted the source IP into its own field — it's still buried in the raw `message` text (`"...Failed password for msfadmin from 192.168.56.101 port..."`). You'll extract it yourself with a regular expression — this is the same job Logstash's `grok` did for you in Lab 2, except now you're the one writing the parser.
 3. **Track**: keep an in-memory record of failed-login timestamps per source IP, and discard anything older than a 60-second sliding window.
-4. **Detect**: if any single source IP has more than 5 failures inside that live 60-second window, that's a brute-force pattern.
+4. **Detect**: if any single source IP has more than 3 failures inside that live 60-second window, that's a brute-force pattern. (The threshold is set to 3 rather than the more intuitive-sounding 5 because, as you'll see in Part 5, this legacy target's logging doesn't reliably produce one discrete log line per attempt.)
 5. **Cooldown**: once you've alerted on a given source IP, don't alert again for it for a few minutes — otherwise you'll flood your alert index with a new document every 10-second poll cycle for as long as the attack continues. (This is a real lesson: this exact problem is why alert fatigue is such a common complaint about badly-tuned detections in production SOCs.)
 6. **Alert**: build a structured JSON document (timestamp, source IP, failure count, detection window, severity) and `POST` it directly into a new Elasticsearch index.
 
@@ -110,7 +110,12 @@ ALERT_INDEX_PREFIX = "custom-ids-alerts"
 
 POLL_INTERVAL_SECONDS = 10
 WINDOW_SECONDS = 60
-THRESHOLD = 5
+# NOTE: this Metasploitable2 build's sshd/PAM sometimes consolidates a repeated
+# failure on the same connection into a "PAM N more authentication failure"
+# summary line instead of a second discrete "Failed password" line, so a
+# 6-attempt attack can log as few as 5 matching events. Threshold is set below
+# that realistic count rather than the theoretical attempt count.
+THRESHOLD = 3
 COOLDOWN_SECONDS = 180
 
 IP_REGEX = re.compile(r"from (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
@@ -122,6 +127,17 @@ last_alerted = {}
 
 # Track the timestamp of the newest event we've already processed
 last_checkpoint = datetime.now(timezone.utc) - timedelta(seconds=WINDOW_SECONDS)
+
+
+def parse_es_timestamp(ts_str):
+    """Elasticsearch returns nanosecond-precision timestamps; Python's
+    datetime.fromisoformat() only supports up to microseconds (6 digits).
+    Truncate any extra precision before parsing."""
+    ts_str = ts_str.replace("Z", "+00:00")
+    match = re.match(r"(.*\.\d{6})\d*(\+\d{2}:\d{2})", ts_str)
+    if match:
+        ts_str = match.group(1) + match.group(2)
+    return datetime.fromisoformat(ts_str)
 
 
 def fetch_new_failures(since):
@@ -152,6 +168,8 @@ def extract_ip(message):
 def prune_old_entries(ip, now):
     cutoff = now - timedelta(seconds=WINDOW_SECONDS)
     failure_windows[ip] = [ts for ts in failure_windows[ip] if ts > cutoff]
+    if not failure_windows[ip]:
+        del failure_windows[ip]
 
 
 def send_alert(ip, count, now):
@@ -189,7 +207,7 @@ def main():
                 if not ip:
                     continue
 
-                event_time = datetime.fromisoformat(event_time_str.replace("Z", "+00:00"))
+                event_time = parse_es_timestamp(event_time_str)
                 failure_windows.setdefault(ip, []).append(event_time)
                 last_checkpoint = max(last_checkpoint, event_time)
 
@@ -241,18 +259,18 @@ Leave it running. You should see it print a "Poll complete" line every 10 second
 
 ## Part 5 — Trigger It
 
-In a **separate terminal**, on Kali, reuse Lab 1's attack exactly as before:
+In a **separate terminal**, on Kali, reuse Lab 1's wordlist but **omit the `-f` flag** this time — with `-f`, Hydra stops the instant it finds the valid password (`msfadmin`, the 5th entry in the Lab 1 wordlist), producing only ~4 failed attempts. Without `-f`, every entry gets attempted regardless:
 
 ```bash
-hydra -l msfadmin -P ~/passwords.txt ssh://192.168.56.103 -t 4 -f
+hydra -l msfadmin -P ~/passwords.txt ssh://192.168.56.103 -t 4
 ```
 
-(If you deleted `~/passwords.txt`, recreate it per Lab 1 Part 6.1.)
+**Note:** you'd expect exactly 6 failed attempts (every wordlist entry except `msfadmin`), but this legacy target's `sshd`/PAM setup sometimes consolidates a repeated failure on the same connection into a summary line instead of a second discrete `"Failed password"` line — so it's normal to see only 5 matching events reach Elasticsearch. That's exactly why the script's `THRESHOLD` is set to `3`, not `5` — comfortably below the realistic count this environment actually produces.
 
 Watch your ELK-SIEM terminal — within one or two poll cycles after the attack lands, you should see:
 
 ```
-[ALERT SENT] 192.168.56.101 — 6 failures in 60s — <document id>
+[ALERT SENT] 192.168.56.101 — 5 failures in 60s — <document id>
 ```
 
 > 📸 **CAPTURE THIS:** Terminal showing the `[ALERT SENT]` line firing.
@@ -363,6 +381,14 @@ sudo journalctl -u bruteforce-detector -f
 
 ## Troubleshooting
 
+- **`ValueError: Invalid isoformat string` crash after the script runs fine for a while:** Elasticsearch returns nanosecond-precision timestamps (9 fractional digits), but Python's `datetime.fromisoformat()` only supports microsecond precision (6 digits) — this only surfaces once a real event is returned, which is why the script can idle successfully at first. The script above already includes the `parse_es_timestamp()` fix for this; if you're hitting it, confirm you copied that helper function and are calling it instead of `datetime.fromisoformat()` directly.
+- **Detector idles indefinitely and never fires an alert despite a real attack:** confirm the actual failure count reaching Elasticsearch matches what the script expects. Query directly:
+  ```bash
+  curl -s "http://192.168.56.102:9200/ssh-auth-logs-*/_search?pretty" -H 'Content-Type: application/json' -d '
+  {"query": {"bool": {"must": [{"match": {"event_outcome": "failure"}}, {"range": {"@timestamp": {"gte": "now-5m"}}}]}}, "sort": [{"@timestamp": "asc"}], "size": 50}'
+  ```
+  If this legacy target's `sshd`/PAM logs fewer discrete `"Failed password"` lines than the number of attempts Hydra actually made (a real quirk of this environment — some repeated failures on one connection get consolidated into a summary line instead), lower `THRESHOLD` in the script to comfortably fit the real count, as covered in Part 5. Also remember: if you ran Hydra with `-f`, it stopped early at ~4 failed attempts — re-run without `-f`.
+- **`prune_old_entries` keeps an IP's dictionary key even after its window empties, making "Tracking N source IP(s)" misleading:** this is a known cosmetic issue in early versions of the script — the version in Part 3 above already includes the fix (`del failure_windows[ip]` once its list is empty). If your script still shows a stale tracking count, confirm you copied that line.
 - **Script exits immediately with `ModuleNotFoundError: No module named 'requests'`:** re-run `pip3 install requests` — if you're using a virtual environment or a different Python interpreter than expected, confirm with `which python3` and `pip3 show requests`.
 - **Script runs but never prints `[ALERT SENT]` even after a Hydra attack:** add a temporary `print(ip, len(failure_windows.get(ip, [])))` line inside the `for ip in list(failure_windows.keys())` loop to see what it's actually counting — the most common cause is the regex not matching your log line format. Compare `IP_REGEX` against an actual raw `message` field value (`curl "http://192.168.56.102:9200/ssh-auth-logs-*/_search?pretty&q=message:Failed"` and inspect the `message` text closely).
 - **`requests.exceptions.ConnectionError`:** confirm Elasticsearch is actually running (`curl http://192.168.56.102:9200` in a separate terminal) before assuming the script is broken.
