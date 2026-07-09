@@ -344,10 +344,10 @@ Re-run one of the Part 5 scans (`-sS` is fastest), then check **Stack Management
 
 ## Part 9 — Document the Finding
 
-As with Lab 1, use the standalone write-up template rather than writing directly in this manual:
+As with Lab 1, two separate files work together in this lab's folder:
 
-- [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx) — formatted Word document
-- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — plain Markdown version
+- [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
+- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
 ---
 

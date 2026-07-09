@@ -1,47 +1,31 @@
-# Lab 4 — Investigation Write-Up Template
+# Lab 4 — Write-Up Guide
 
-> Copy this file's contents into your own findings, or duplicate this file (e.g. `WRITEUP.md`) and fill it in.
+> This file does **not** contain the write-up template itself — that lives in [`Lab4-Investigation-Writeup-Template.docx`](./Lab4-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for. This lab's timeline pulls from multiple sources at once — that's the point of the exercise.
 
-## Investigation Write-Up
+## Date/Time
 
-**Date/Time:** [fill in from your Part 2.2 recon timestamp]
-**Source (attacker):** 192.168.56.101 (Kali)
-**Target (victim):** 192.168.56.103 (Metasploitable2)
-**Attack Chain:** Nmap full port/version reconnaissance → Metasploit `vsftpd_234_backdoor` exploitation → root shell → post-exploitation commands
+From your Part 2.2 recon check — the earliest `@timestamp` returned by:
+```bash
+curl "http://192.168.56.102:9200/portscan-logs-*/_search?pretty&q=src_ip:192.168.56.101"
+```
 
-### Incident Timeline
+## Source / Target / Attack Chain
 
-| Stage | Event | Timestamp | Evidence Source | Caught by SIEM? |
-|---|---|---|---|---|
-| 1 | Reconnaissance (full port/version scan) | [ts] | `portscan-logs-*` | Yes |
-| 2 | Exploitation attempt (vsftpd backdoor trigger) | [ts] | Wireshark only | No |
-| 3 | Root shell established (port 6200) | [ts] | Wireshark only | No |
-| 4 | Post-exploitation commands executed | [ts] | Wireshark only | No |
+Static for this lab — copy as-is from what's already in the document.
 
-### Detection Coverage Summary
+## Incident Timeline Rows
 
-Reconnaissance was fully visible via the port-scan detection pipeline built in Lab 2.
-Everything from the moment of exploitation onward — the backdoor trigger, the resulting
-root shell, and all post-exploitation activity — was completely invisible to both SIEM
-indices in use (`ssh-auth-logs-*` and `portscan-logs-*`). Only the Wireshark packet
-capture recorded these later stages.
+1. **Reconnaissance (full port/version scan)** — same timestamp as "Date/Time" above, from `portscan-logs-*`.
+2. **Exploitation attempt (vsftpd backdoor trigger)** — in your saved `lab4-exploitation-capture.pcapng`, filter `tcp.port == 21 or tcp.port == 6200`, take the timestamp of the first port-21 packet (Part 5.2).
+3. **Root shell established (port 6200)** — same filtered view, the timestamp of the first port-6200 packet.
+4. **Post-exploitation commands executed** — the timestamp of the last relevant packet in that same stream, corresponding to your Part 4 command activity.
 
-### Root Cause of the Detection Gap
+The "Evidence Source" and "Caught by SIEM?" columns are already filled in correctly in the template — reconnaissance is the only stage your SIEM caught; everything after it was Wireshark-only. You're only filling in the four timestamps.
 
-Neither existing pipeline was built to monitor FTP-layer exploitation or arbitrary
-shell traffic on non-standard ports (6200, in this case). This mirrors a common
-real-world gap: detections are often built reactively, around techniques already
-understood, leaving genuinely novel or less-common attack paths uncovered until
-an incident forces the gap into view.
+## Detection Coverage Summary / Root Cause / Recommendation
 
-### Evidence
+These sections are already written as general findings — confirm they match your actual results (i.e., you genuinely found nothing exploitation-related in either Elasticsearch index per Part 5.1) rather than researching anything new.
 
-(embed your screenshots here, e.g. `![Backdoor shell obtained](media/lab04-03-vsftpd-backdoor-shell.png)`)
+## Evidence
 
-### Recommendation
-
-Extend log/detection coverage to include FTP service logs and unusual outbound/inbound
-connections on non-standard ports (such as 6200) — the same "unexpected port" principle
-established in Lab 3. More broadly, this incident is a case for periodic purple-team
-exercises that specifically test attack paths outside the SOC's current detection
-coverage, rather than only validating detections that are already known to work.
+Reference your existing screenshots by filename (e.g. `media/lab04-03-vsftpd-backdoor-shell.png`) — no new captures needed.

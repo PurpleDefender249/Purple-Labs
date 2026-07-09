@@ -268,10 +268,10 @@ They won't — a reverse shell isn't a login event, so it's invisible to exactly
 
 ## Part 7 — Document the Finding
 
-Standalone templates, same pattern as prior labs:
+Standalone files, same pattern as prior labs:
 
-- [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx) — formatted Word document
-- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — plain Markdown version
+- [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
+- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
 ---
 

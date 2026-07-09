@@ -1,40 +1,36 @@
-# Lab 1 — Investigation Write-Up Template
+# Lab 1 — Write-Up Guide
 
-> Copy this file's contents into your own findings, or duplicate this file (e.g. `WRITEUP.md`) and fill it in. This is the deliverable a real SOC analyst would produce after this investigation — fill in every bracketed field with your actual lab data and timestamps.
+> This file does **not** contain the write-up template itself — that lives in [`Lab1-Investigation-Writeup-Template.docx`](./Lab1-Investigation-Writeup-Template.docx), which is intentionally left as a clean, instruction-free document you can fill in directly or hand off as-is. This guide explains **where to find** the information each field in that document is asking for.
 
-## Investigation Write-Up
+## Date/Time of Attack
 
-**Date/Time of Attack:** [fill in from your Hydra run timestamp]
-**Source:** 192.168.56.101 (Kali — simulated attacker)
-**Target:** 192.168.56.103 (Metasploitable2)
-**Technique:** SSH dictionary brute-force (Hydra, 7-entry wordlist, 4 threads)
+Look at the top of your Hydra output from Part 6.3 — the line that says:
+```
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at [date/time]
+```
+That's your attack start time.
 
-### Timeline
+## Source / Target / Technique
 
-| Time | Event |
-|---|---|
-| [ts] | First failed login attempt observed |
-| [ts] | Failed-login count crosses threshold (5/min) |
-| [ts] | Alert rule shows "Active" status |
-| [ts] | Successful login recorded (`msfadmin` password matched) |
+These are static for this lab — just use `192.168.56.101` (Kali), `192.168.56.103` (Metasploitable2), and "SSH dictionary brute-force" as already noted in the document.
 
-### Detection Logic
+## Timeline Rows
 
-Elasticsearch query rule on index `ssh-auth-logs-*`, counting documents matching
-`message: "Failed password"`, threshold >5 events per 1-minute window.
+Kibana **Discover** (`SSH Auth Logs` data view) is your source of truth for all of these:
 
-### False Positive Considerations
+1. **First failed login attempt observed** — filter `message: "Failed password"`, sort by `@timestamp` **ascending**. The first row is your answer.
+2. **Failed-login count crosses threshold (5/min)** — scroll through the sorted results and find the timestamp of the 5th failed-login event within any rolling 1-minute window. This is manual counting — normal for tuning work.
+3. **Alert rule shows "Active" status** — **Stack Management → Rules → SSH Brute-Force Threshold Alert → Alerts** (or **Execution history**) tab shows the exact time it transitioned to Active.
+4. **Successful login recorded** — run this on ELK-SIEM for the precise timestamp:
+   ```bash
+   curl "http://192.168.56.102:9200/ssh-auth-logs-*/_search?pretty&q=message:Accepted"
+   ```
+   The `@timestamp` field in the result is your answer.
 
-A legitimate user mistyping their password 2–3 times would not cross this threshold.
-Environments with many simultaneous legitimate users may need a per-source-IP
-threshold instead of a global one — worth calling out as a tuning consideration
-rather than something this lab solves outright.
+## Detection Logic / False Positive Considerations / Recommendation
 
-### Evidence
+These sections are largely conceptual — restate the rule you actually built (index, query, threshold, window) and the reasoning already covered in Lab 1 Part 8. You don't need to look anything up; just confirm what you configured matches what you write.
 
-(embed your screenshots here, e.g. `![Hydra attack](media/lab01-07-hydra-attack-success.png)`)
+## Evidence
 
-### Recommendation
-
-Rate-limit or temporarily lock accounts after repeated failures (e.g. `fail2ban`),
-and consider disabling direct password auth on SSH in favor of key-based auth.
+Reference your existing screenshots by filename (e.g. `media/lab01-07-hydra-attack-success.png`) — no new captures needed.

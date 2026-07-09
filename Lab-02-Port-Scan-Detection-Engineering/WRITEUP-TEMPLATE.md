@@ -1,44 +1,32 @@
-# Lab 2 — Investigation Write-Up Template
+# Lab 2 — Write-Up Guide
 
-> Copy this file's contents into your own findings, or duplicate this file (e.g. `WRITEUP.md`) and fill it in.
+> This file does **not** contain the write-up template itself — that lives in [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
 
-## Investigation Write-Up
+## Date/Time of Scans
 
-**Date/Time of Scans:** [fill in from your first Nmap scan timestamp]
-**Source:** 192.168.56.101 (Kali — simulated attacker)
-**Target:** 192.168.56.103 (Metasploitable2)
-**Techniques Observed:** SYN scan, TCP connect scan, ACK scan, UDP scan, host-discovery-skip, slow-timing stealth scan
+The timestamp printed at the top of your first Nmap scan's output (the `-sS` scan from Part 5):
+```
+Starting Nmap ... at [date/time]
+```
 
-### Timeline
+## Source / Target / Techniques Observed
 
-| Time | Event |
-|---|---|
-| [ts] | Benign baseline traffic recorded (2–3 ports touched) |
-| [ts] | First scan (`-sS`) launched |
-| [ts] | Unique-port-count threshold crossed |
-| [ts] | Alert rule shows "Active" status |
-| [ts] | Remaining scan types (`-sT`, `-sA`, `-sU`, `-Pn`, `-T0`) completed |
+Static for this lab — copy as-is from what's already in the document.
 
-### Detection Logic
+## Timeline Rows
 
-Elasticsearch query rule on index `portscan-logs-*`, using a `cardinality` aggregation on
-`dst_port` grouped by `src_ip`, threshold >10 unique ports touched per 1-minute window.
+Kibana **Discover** (`Port Scan Logs` data view) is your source of truth for most of these:
 
-### False Positive Considerations
+1. **Benign baseline traffic recorded** — the timestamp of your Part 7.1 `curl`/`ssh` test. Filter `src_ip: "192.168.56.101"`, sort ascending — it's your earliest entry, showing only 2–3 distinct `dst_port` values in that minute.
+2. **First scan (`-sS`) launched** — the `Starting Nmap ... at` line from that scan's terminal output (Part 5), or cross-check in Discover for the first minute where `dst_port` values jump from single digits to dozens.
+3. **Unique-port-count threshold crossed** — scroll through the `-sS` scan's burst in Discover and find the timestamp of roughly the 10th–11th distinct port touched within that same minute. Manual counting, same as Lab 1's threshold point.
+4. **Alert rule shows "Active" status** — **Stack Management → Rules → Port Scan Threshold Alert → Alerts** tab shows the exact time it transitioned to Active.
+5. **Remaining scan types completed** — the final line of each scan's terminal output (Nmap prints `Nmap done: ... scanned in X.XX seconds`) — note the timestamp of your last one.
 
-Benign traffic (a single web request plus one SSH check) touched only 2 distinct ports in
-the same window — well under the threshold. In a production network with more diverse
-legitimate multi-port clients (health checks, load balancers), a longer baseline period
-would be needed before finalizing this threshold.
+## Detection Logic / False Positive Considerations / Recommendation
 
-### Evidence
+Conceptual sections — restate the cardinality-based rule you built (Part 8) and the benign-vs-scan comparison from Part 7. No lookup needed, just confirm your write-up matches what you actually configured.
 
-(embed your screenshots here, e.g. `![Nmap SYN scan](media/lab02-05-nmap-syn-scan.png)`)
+## Evidence
 
-### Recommendation
-
-Alert on unique-destination-port cardinality per source rather than raw packet/connection
-counts, since scan techniques (SYN vs. connect vs. ACK) vary widely in packet volume but
-consistently touch many distinct ports in a short window. Consider a secondary, lower
-threshold as a "low and slow" tier to catch stealth-timed scans that spread probes out
-over longer windows than this lab's 1-minute bucket would catch.
+Reference your existing screenshots by filename (e.g. `media/lab02-05-nmap-syn-scan.png`) — no new captures needed.

@@ -234,10 +234,10 @@ This table — explicitly built as part of the write-up template — is the core
 
 ## Part 8 — Document the Finding
 
-- [`Lab4-Investigation-Writeup-Template.docx`](./Lab4-Investigation-Writeup-Template.docx) — formatted Word document
-- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — plain Markdown version
+- [`Lab4-Investigation-Writeup-Template.docx`](./Lab4-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
+- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
-Both include the full timeline table structure from Part 7, ready to fill in.
+Both include the full timeline table structure from Part 7 — the `.docx` ready to fill in, the `.md` explaining where each timestamp comes from.
 
 ---
 

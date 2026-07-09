@@ -68,7 +68,7 @@ soc-threat-hunting-course/
 └── Lab-09-Baseline-vs-Attack-Deviation/
 ```
 
-Each lab folder is self-contained: its `README.md` is the full manual, `media/` holds only that lab's screenshots, and a `WRITEUP-TEMPLATE.md` provides a ready-to-fill investigation write-up template — kept as a separate file from the manual, so your finished write-up is its own standalone deliverable rather than embedded in the instructions.
+Each lab folder is self-contained: its `README.md` is the full manual, `media/` holds only that lab's screenshots, and two files support the final deliverable — a clean, instruction-free `LabN-Investigation-Writeup-Template.docx` to actually fill in, and a `WRITEUP-TEMPLATE.md` guide explaining exactly where in that lab to find the information each field needs. This split keeps the Word document itself presentation-ready with nothing to delete before submitting or publishing it.
 
 ## How Media Works in This Course
 
