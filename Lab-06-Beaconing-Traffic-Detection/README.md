@@ -268,10 +268,19 @@ def parse_es_timestamp(ts_str):
     return datetime.fromisoformat(ts_str)
 
 
-def fetch_events(index, source_ip, size=100):
+def fetch_events(index, source_ip, size=100, start_time=None, end_time=None):
     url = f"{ES_HOST}/{index}/_search"
+    must_clauses = [{"match": {"src_ip": source_ip}}]
+    if start_time or end_time:
+        range_filter = {}
+        if start_time:
+            range_filter["gte"] = start_time
+        if end_time:
+            range_filter["lte"] = end_time
+        must_clauses.append({"range": {"@timestamp": range_filter}})
+
     query = {
-        "query": {"match": {"src_ip": source_ip}},
+        "query": {"bool": {"must": must_clauses}},
         "sort": [{"@timestamp": "asc"}],
         "size": size
     }
@@ -280,8 +289,8 @@ def fetch_events(index, source_ip, size=100):
     return [hit["_source"]["@timestamp"] for hit in resp.json()["hits"]["hits"]]
 
 
-def analyze(index, source_ip):
-    timestamps_raw = fetch_events(index, source_ip)
+def analyze(index, source_ip, start_time=None, end_time=None):
+    timestamps_raw = fetch_events(index, source_ip, start_time=start_time, end_time=end_time)
     if len(timestamps_raw) < 3:
         print(f"Not enough events ({len(timestamps_raw)}) to analyze timing for {source_ip}.")
         return
@@ -315,12 +324,15 @@ def analyze(index, source_ip):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 analyze_beaconing.py <index> <source_ip>")
+    if len(sys.argv) < 3:
+        print("Usage: python3 analyze_beaconing.py <index> <source_ip> [start_iso] [end_iso]")
         print("Example: python3 analyze_beaconing.py beacon-logs-* 192.168.56.103")
+        print("Example with time range: python3 analyze_beaconing.py beacon-logs-* 192.168.56.103 2026-07-09T08:00:00Z 2026-07-09T08:10:00Z")
         sys.exit(1)
 
-    analyze(sys.argv[1], sys.argv[2])
+    start_arg = sys.argv[3] if len(sys.argv) > 3 else None
+    end_arg = sys.argv[4] if len(sys.argv) > 4 else None
+    analyze(sys.argv[1], sys.argv[2], start_time=start_arg, end_time=end_arg)
 ```
 
 Save and run it against your beacon traffic:
@@ -355,15 +367,27 @@ done
 
 This connects 6 times with a random 5–45 second gap between each — mimicking unpredictable human/application behavior rather than a fixed script interval.
 
-### 6.3 Analyze It the Same Way
+### 6.3 Analyze Each Segment Separately
 
-Once this finishes (this will take several minutes — that's expected), re-run the analyzer:
+Analyzing the full combined history will mix your clean beacon traffic, the new irregular traffic, and (if any time passed between sessions) potentially a large idle gap that can dominate the statistics and drown out the real signal. Instead, scope each analysis to its own time window — exactly what a real analyst would do rather than blindly querying all history.
+
+First, find the approximate start time of your irregular-traffic loop (Part 6.2) — check your terminal scrollback for when you ran the `for i in 1 2 3 4 5 6; do ...` command, or query Elasticsearch for the boundary:
 
 ```bash
-python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103
+curl "http://192.168.56.102:9200/beacon-logs-*/_search?pretty&size=5&sort=@timestamp:desc"
 ```
 
-**Note:** this will actually analyze the **combined** dataset (your earlier beacon traffic plus this new irregular traffic), since both used the same index and destination — that's fine for this comparison, but be aware of it when interpreting the result and writing up your findings. For a cleaner side-by-side comparison, you could adjust the script to filter by a time range covering only the irregular-traffic window.
+Then run the analyzer twice, once scoped to each segment (adjust the timestamps to match your actual run):
+
+```bash
+# Beacon-only window (before you stopped beacon.sh)
+python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103 2026-07-09T08:00:00Z 2026-07-09T08:10:00Z
+
+# Irregular-traffic-only window (after you started the random-interval loop)
+python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103 2026-07-09T08:15:00Z 2026-07-09T08:25:00Z
+```
+
+You should now see a clean, low coefficient of variation for the beacon window and a clearly higher one for the irregular window — a real, isolated comparison instead of one contaminated by unrelated timing gaps.
 
 > 📸 **CAPTURE THIS:** Terminal showing this second analysis run and its (likely less confident, or mixed) verdict.
 > Save as `lab06-07-irregular-traffic-verdict.png` → `![Irregular traffic verdict comparison](media/lab06-07-irregular-traffic-verdict.png)`
@@ -394,6 +418,7 @@ python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103
 - **`ncat -lvk` doesn't seem to accept repeat connections:** double-check you used `ncat`, not plain `nc` — this is exactly the capability gap this lab's Part 1 called out.
 - **`nano` fails with `Error opening terminal` on Metasploitable2:** run `export TERM=xterm` first — see Lab 1 Part 4.1.
 - **No beacon events reaching Elasticsearch:** confirm the `OUTPUT` chain rule exists (`sudo iptables -L OUTPUT -v -n`, distinct from Lab 2's `INPUT` rule), and that the Logstash pipeline restarted cleanly after the Part 4.2 edit (`sudo systemctl status logstash`).
+- **Coefficient of variation is wildly high (e.g. >1) even though the beacon looked regular in Wireshark:** check your printed gap list for one enormous outlier — most likely a pause between work sessions (hours, not seconds) rather than actual traffic irregularity. This single value can dominate the mean/stdev calculation. Use the time-range arguments added in Part 6.3 (`start_iso`/`end_iso`) to scope your analysis to a clean, contiguous window instead of your entire session history.
 - **Analyzer script errors with "Not enough events":** you need at least 3 beacon check-ins logged before there's enough data for two gaps to compute a standard deviation from — let the beacon run longer before analyzing.
 - **Coefficient of variation for the beacon isn't as low as expected:** minor timing jitter from `nc -w 2`'s connection overhead is normal and won't meaningfully affect the result; if it's wildly irregular, confirm `sleep 30` wasn't accidentally edited to something randomized in your script.
 
