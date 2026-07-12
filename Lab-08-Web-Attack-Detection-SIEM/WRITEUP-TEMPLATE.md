@@ -6,7 +6,7 @@
 
 The `@timestamp` of your Part 4.1 SQL injection request — check via:
 ```bash
-curl "http://192.168.56.102:9200/web-access-logs-*/_search?pretty&q=request:*UNION*+OR+request:*1*3D*1*"
+curl "http://192.168.56.102:9200/web-access-logs-*/_search?pretty&q=url.original.keyword:*UNION*+OR+url.original.keyword:*1*3D*1*"
 ```
 or simply note the time shown in your browser/terminal when you submitted the attack.
 

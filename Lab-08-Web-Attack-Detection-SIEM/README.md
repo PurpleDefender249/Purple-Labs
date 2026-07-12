@@ -203,7 +203,9 @@ On ELK-SIEM:
 curl "http://192.168.56.102:9200/web-access-logs-*/_search?pretty&size=1&sort=@timestamp:desc"
 ```
 
-You should see a parsed event with fields like `verb`, `request`, `response`, `clientip`, `bytes` — all extracted automatically by `COMBINEDAPACHELOG`.
+You should see a parsed document with fields like `url.original`, `http.response.status_code`, `http.request.method`, and `source.address` — all extracted automatically by `COMBINEDAPACHELOG`.
+
+**Note on field names:** Logstash 8.x's `grok` filter defaults to ECS (Elastic Common Schema) compatibility mode, which maps this pattern's output to nested field names (`url.original`, `http.response.status_code`, `source.address`) rather than flatter legacy names (`request`, `response`, `clientip`) you may see referenced elsewhere. Every query in this lab uses the correct ECS field names — if you're ever unsure what a field is actually called, run a `curl` search like the one above and inspect the real `_source` output rather than guessing.
 
 > 📸 **CAPTURE THIS:** This `curl` output showing a parsed web access event.
 > Save as `lab08-03-parsed-web-event.png` → `![Parsed web access event](media/lab08-03-parsed-web-event.png)`
@@ -264,10 +266,12 @@ Browser: `http://192.168.56.102:5601`. First, create the data view if you haven'
 **Discover** → data view `Web Access Logs` → search:
 
 ```
-request: *OR*1*1* or request: *script* or request: *UNION*
+url.original.keyword: *OR*1*1* or url.original.keyword: *script* or url.original.keyword: *UNION*
 ```
 
-You should see your three attack requests, with the actual payloads visible in the `request` field.
+**Note on `.keyword`:** `url.original` is indexed as an analyzed **text** field, meaning Elasticsearch's default analyzer strips punctuation (`%`, `=`, `'`, etc.) before indexing — so a wildcard search directly against `url.original` can silently fail to match anything containing symbols. Appending `.keyword` targets the unanalyzed exact-string version of the field instead, which preserves every character. This is a genuinely common real-world gotcha the first time you write Elasticsearch queries against punctuation-heavy content like URLs — worth remembering for future labs too.
+
+You should see your attack requests, with the actual payloads visible in the `url.original` field.
 
 > 📸 **CAPTURE THIS:** Discover showing the three attack requests matched by this query.
 > Save as `lab08-07-suspicious-parameters-query.png` → `![Suspicious parameters detected](media/lab08-07-suspicious-parameters-query.png)`
@@ -277,14 +281,14 @@ You should see your three attack requests, with the actual payloads visible in t
 Real attackers often URL-encode their payloads to slip past naive filters (`'` becomes `%27`, `<` becomes `%3C`, etc.). Search for these directly:
 
 ```
-request: *%27* or request: *%3C* or request: *%2e%2e*
+url.original.keyword: *%27* or url.original.keyword: *%3C* or url.original.keyword: *%2e%2e*
 ```
 
-**Note:** since you typed your payloads directly into DVWA's form fields (which the browser URL-encodes automatically for GET requests, or sends raw in the POST body depending on the page), check your actual logged `request` field to see which form it arrived in — this is a good thing to note explicitly in your write-up, since it directly demonstrates why both plain and encoded pattern variants are needed in a real detection rule.
+**Note:** since you typed your payloads directly into DVWA's form fields (which the browser URL-encodes automatically for GET requests, or sends raw in the POST body depending on the page), check your actual logged `url.original` field to see which form it arrived in — this is a good thing to note explicitly in your write-up, since it directly demonstrates why both plain and encoded pattern variants are needed in a real detection rule.
 
 ### 5.3 HTTP Error Spikes
 
-**Visualize Library → Create visualization → Lens**. Data view `Web Access Logs`. Chart type **Bar vertical**. Horizontal axis `@timestamp` (Minute interval). Vertical axis **Count of records**, with a filter `response >= 400`. Title: **HTTP Error Responses Over Time**. **Save**.
+**Visualize Library → Create visualization → Lens**. Data view `Web Access Logs`. Chart type **Bar vertical**. Horizontal axis `@timestamp` (Minute interval). Vertical axis **Count of records**, with a filter `http.response.status_code >= 400`. Title: **HTTP Error Responses Over Time**. **Save**.
 
 > 📸 **CAPTURE THIS:** The finished error-spike chart (may be minimal in this lab if your requests mostly returned 200 — note that observation explicitly in your write-up; it's a valid finding, not a failure).
 > Save as `lab08-08-http-error-spike-chart.png` → `![HTTP error spike chart](media/lab08-08-http-error-spike-chart.png)`
@@ -313,6 +317,7 @@ request: *%27* or request: *%3C* or request: *%2e%2e*
 
 ## Troubleshooting
 
+- **Wildcard queries containing `%`, `=`, or other punctuation return no results, even though you can see the value in Discover:** query the `.keyword` sub-field instead of the base field (e.g. `url.original.keyword: *%27*` instead of `url.original: *%27*`). The base field is analyzed text — Elasticsearch's default analyzer strips punctuation before indexing, so literal symbol-containing wildcard searches against it can silently fail. `.keyword` preserves the exact original string.
 - **`nano` fails with `Error opening terminal` on Metasploitable2:** run `export TERM=xterm` first — see Lab 1 Part 4.1.
 - **No web-access-logs events appear:** confirm Apache actually restarted cleanly (`sudo /etc/init.d/apache2 restart` shouldn't error), and that the `logger` command path is correct — check with `which logger` on Metasploitable2 if the pipe silently fails.
 - **Events arrive but `COMBINEDAPACHELOG` fails to parse (only raw `message` populated):** the `logger` tag adds `apache2:` before the actual log content — if your grok match isn't finding it, run `sudo tail -5 /var/log/messages` on Metasploitable2 to see the exact raw format being sent and adjust the `"apache2: %{COMBINEDAPACHELOG}"` pattern's prefix if it differs.
