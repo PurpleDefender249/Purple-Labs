@@ -53,8 +53,7 @@ Password: password
 
 Once logged in, go to **DVWA Security** (left sidebar) and set the security level to **low** — this ensures the vulnerabilities behave predictably for this lab, without extra input filtering getting in the way.
 
-> 📸 **CAPTURE THIS:** Screenshot of the DVWA Security page with "low" selected and submitted.
-> Save as `lab08-01-dvwa-security-low.png` → `![DVWA security level set to low](media/lab08-01-dvwa-security-low.png)`
+![DVWA security level set to low](media/lab08-01-dvwa-security-low.png)
 
 ---
 
@@ -107,8 +106,7 @@ Save and restart:
 sudo /etc/init.d/sysklogd restart
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing the edited Apache config and syslog config (e.g. `grep -A1 CustomLog /etc/apache2/sites-enabled/000-default` and `grep local1 /etc/syslog.conf`).
-> Save as `lab08-02-apache-syslog-forwarding.png` → `![Apache syslog forwarding configured](media/lab08-02-apache-syslog-forwarding.png)`
+![Apache syslog forwarding configured](media/lab08-02-apache-syslog-forwarding.png)
 
 ---
 
@@ -207,8 +205,7 @@ You should see a parsed document with fields like `url.original`, `http.response
 
 **Note on field names:** Logstash 8.x's `grok` filter defaults to ECS (Elastic Common Schema) compatibility mode, which maps this pattern's output to nested field names (`url.original`, `http.response.status_code`, `source.address`) rather than flatter legacy names (`request`, `response`, `clientip`) you may see referenced elsewhere. Every query in this lab uses the correct ECS field names — if you're ever unsure what a field is actually called, run a `curl` search like the one above and inspect the real `_source` output rather than guessing.
 
-> 📸 **CAPTURE THIS:** This `curl` output showing a parsed web access event.
-> Save as `lab08-03-parsed-web-event.png` → `![Parsed web access event](media/lab08-03-parsed-web-event.png)`
+![Parsed web access event](media/lab08-03-parsed-web-event.png)
 
 ---
 
@@ -226,8 +223,7 @@ Navigate to **SQL Injection** (left sidebar). In the "User ID" field, enter:
 
 Submit. You should see results for **all** users, not just one — confirming the injection worked.
 
-> 📸 **CAPTURE THIS:** The DVWA SQLi page showing all users returned by the injected query.
-> Save as `lab08-04-sqli-attack-result.png` → `![SQL injection attack result](media/lab08-04-sqli-attack-result.png)`
+![SQL injection attack result](media/lab08-04-sqli-attack-result.png)
 
 ### 4.2 Reflected XSS
 
@@ -239,8 +235,7 @@ Navigate to **XSS (Reflected)**. In the "What's your name?" field, enter:
 
 Submit. You should see a JavaScript alert box pop up, confirming the script executed.
 
-> 📸 **CAPTURE THIS:** The browser showing the JavaScript alert box firing.
-> Save as `lab08-05-xss-attack-result.png` → `![XSS attack result](media/lab08-05-xss-attack-result.png)`
+![XSS attack result](media/lab08-05-xss-attack-result.png)
 
 ### 4.3 Directory Traversal (File Inclusion)
 
@@ -252,8 +247,7 @@ http://192.168.56.103/dvwa/vulnerabilities/fi/?page=../../../../../../etc/passwd
 
 Submit/navigate. You should see the contents of `/etc/passwd` displayed on the page.
 
-> 📸 **CAPTURE THIS:** The browser showing `/etc/passwd` contents via the traversal payload.
-> Save as `lab08-06-traversal-attack-result.png` → `![Directory traversal attack result](media/lab08-06-traversal-attack-result.png)`
+![Directory traversal attack result](media/lab08-06-traversal-attack-result.png)
 
 ---
 
@@ -269,12 +263,11 @@ Browser: `http://192.168.56.102:5601`. First, create the data view if you haven'
 url.original.keyword: *OR*1*1* or url.original.keyword: *script* or url.original.keyword: *UNION*
 ```
 
-**Note on `.keyword`:** `url.original` is indexed as an analyzed **text** field, meaning Elasticsearch's default analyzer strips punctuation (`%`, `=`, `'`, etc.) before indexing — so a wildcard search directly against `url.original` can silently fail to match anything containing symbols. Appending `.keyword` targets the unanalyzed exact-string version of the field instead, which preserves every character. This is a genuinely common real-world gotcha the first time you write Elasticsearch queries against punctuation-heavy content like URLs — worth remembering for future labs too.
+**Note on `.keyword`:** `url.original` is indexed as an analyzed **text** field, meaning Elasticsearch's default analyzer strips punctuation (`%`, `=`, `'`, etc.) before indexing — so a wildcard search directly against `url.original` can silently fail to match anything containing symbols. Appending `.keyword` targets the unanalyzed exact-string version of the field instead, which preserves every character. This is a genuinely common real-world gotcha the first time you write Elasticsearch queries against punctuation-heavy content like URLs.
 
 You should see your attack requests, with the actual payloads visible in the `url.original` field.
 
-> 📸 **CAPTURE THIS:** Discover showing the three attack requests matched by this query.
-> Save as `lab08-07-suspicious-parameters-query.png` → `![Suspicious parameters detected](media/lab08-07-suspicious-parameters-query.png)`
+![Suspicious parameters detected](media/lab08-07-suspicious-parameters-query.png)
 
 ### 5.2 Encoded Payloads
 
@@ -284,14 +277,13 @@ Real attackers often URL-encode their payloads to slip past naive filters (`'` b
 url.original.keyword: *%27* or url.original.keyword: *%3C* or url.original.keyword: *%2e%2e*
 ```
 
-**Note:** since you typed your payloads directly into DVWA's form fields (which the browser URL-encodes automatically for GET requests, or sends raw in the POST body depending on the page), check your actual logged `url.original` field to see which form it arrived in — this is a good thing to note explicitly in your write-up, since it directly demonstrates why both plain and encoded pattern variants are needed in a real detection rule.
+**Also keep in mind, detective!:** since you typed your payloads directly into DVWA's form fields (which the browser URL-encodes automatically for GET requests, or sends raw in the POST body depending on the page), check your actual logged `url.original` field to see which form it arrived in, since it directly demonstrates why both plain and encoded pattern variants are needed in a real detection rule.
 
 ### 5.3 HTTP Error Spikes
 
 **Visualize Library → Create visualization → Lens**. Data view `Web Access Logs`. Chart type **Bar vertical**. Horizontal axis `@timestamp` (Minute interval). Vertical axis **Count of records**, with a filter `http.response.status_code >= 400`. Title: **HTTP Error Responses Over Time**. **Save**.
 
-> 📸 **CAPTURE THIS:** The finished error-spike chart (may be minimal in this lab if your requests mostly returned 200 — note that observation explicitly in your write-up; it's a valid finding, not a failure).
-> Save as `lab08-08-http-error-spike-chart.png` → `![HTTP error spike chart](media/lab08-08-http-error-spike-chart.png)`
+![HTTP error spike chart](media/lab08-08-http-error-spike-chart.png)
 
 ---
 
@@ -302,19 +294,6 @@ url.original.keyword: *%27* or url.original.keyword: *%3C* or url.original.keywo
 
 ---
 
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab08-01-dvwa-security-low.png` | DVWA security level set to low |
-| `lab08-02-apache-syslog-forwarding.png` | Apache/syslog forwarding configured |
-| `lab08-03-parsed-web-event.png` | Parsed web access event in Elasticsearch |
-| `lab08-04-sqli-attack-result.png` | SQL injection attack succeeding |
-| `lab08-05-xss-attack-result.png` | XSS attack succeeding |
-| `lab08-06-traversal-attack-result.png` | Directory traversal attack succeeding |
-| `lab08-07-suspicious-parameters-query.png` | Suspicious parameters detection query |
-| `lab08-08-http-error-spike-chart.png` | HTTP error spike visualization |
-
 ## Troubleshooting
 
 - **Wildcard queries containing `%`, `=`, or other punctuation return no results, even though you can see the value in Discover:** query the `.keyword` sub-field instead of the base field (e.g. `url.original.keyword: *%27*` instead of `url.original: *%27*`). The base field is analyzed text — Elasticsearch's default analyzer strips punctuation before indexing, so literal symbol-containing wildcard searches against it can silently fail. `.keyword` preserves the exact original string.
@@ -323,20 +302,3 @@ url.original.keyword: *%27* or url.original.keyword: *%3C* or url.original.keywo
 - **Events arrive but `COMBINEDAPACHELOG` fails to parse (only raw `message` populated):** the `logger` tag adds `apache2:` before the actual log content — if your grok match isn't finding it, run `sudo tail -5 /var/log/messages` on Metasploitable2 to see the exact raw format being sent and adjust the `"apache2: %{COMBINEDAPACHELOG}"` pattern's prefix if it differs.
 - **DVWA login fails or the security level won't save:** confirm you're using `admin`/`password` exactly, and that you're clicking **Submit** on the DVWA Security page after selecting "low" — the setting doesn't apply until submitted.
 - **XSS alert box doesn't appear:** confirm the security level is actually "low" — DVWA's medium/high levels filter or encode script tags specifically to prevent this.
-
-## Completion Checklist
-
-- [ ] DVWA accessible, logged in, security level set to low
-- [ ] Apache configured to pipe logs to syslog
-- [ ] Logstash pipeline extended with `COMBINEDAPACHELOG` parsing
-- [ ] Baseline request confirmed parsed correctly in Elasticsearch
-- [ ] SQL injection attack executed successfully
-- [ ] Reflected XSS attack executed successfully
-- [ ] Directory traversal attack executed successfully
-- [ ] Suspicious parameters detection query built and tested
-- [ ] Encoded payload query considered/tested
-- [ ] HTTP error spike visualization built
-- [ ] All 8 screenshots captured and named per convention
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 9 — Network Baseline vs Attack Deviation Report**.

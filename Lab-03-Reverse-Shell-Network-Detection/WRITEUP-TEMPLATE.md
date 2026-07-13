@@ -1,7 +1,5 @@
 # Lab 3 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for. Note this lab uses Wireshark, not Kibana, as its primary evidence source.
-
 ## Date/Time
 
 The timestamp shown in Wireshark's status bar or packet list for the very first packet of your Netcat capture (Part 3.2–3.5) — that's your session start.
@@ -25,4 +23,4 @@ These sections are already written as general findings in the document — confi
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab03-05-follow-tcp-stream.png`) — no new captures needed.
+Reference your  screenshots  (e.g. `media/lab03-05-follow-tcp-stream.png`)

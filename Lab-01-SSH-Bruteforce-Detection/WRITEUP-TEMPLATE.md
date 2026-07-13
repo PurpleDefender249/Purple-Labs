@@ -1,7 +1,5 @@
 # Lab 1 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab1-Investigation-Writeup-Template.docx`](./Lab1-Investigation-Writeup-Template.docx), which is intentionally left as a clean, instruction-free document you can fill in directly or hand off as-is. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time of Attack
 
 Look at the top of your Hydra output from Part 6.3 — the line that says:
@@ -33,4 +31,4 @@ These sections are largely conceptual — restate the rule you actually built (i
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab01-07-hydra-attack-success.png`) — no new captures needed.
+Reference your screenshots (e.g. `media/lab01-07-hydra-attack-success.png`)

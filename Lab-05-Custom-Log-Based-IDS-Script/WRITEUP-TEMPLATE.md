@@ -1,7 +1,5 @@
 # Lab 5 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab5-Investigation-Writeup-Template.docx`](./Lab5-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time
 
 The timestamp of your first `[ALERT SENT]` line from Part 5 — visible directly in your ELK-SIEM terminal, or in the alert document's own `@timestamp` field:
@@ -26,4 +24,4 @@ These sections are conceptual — restate the algorithm you actually implemented
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab05-03-alert-sent.png`) — no new captures needed.
+Reference your  screenshots  (e.g. `media/lab05-03-alert-sent.png`)

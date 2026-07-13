@@ -1,7 +1,5 @@
 # Lab 9 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab9-Investigation-Writeup-Template.docx`](./Lab9-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time
 
 The start time of your baseline capture (Part 1.1) — check Wireshark's first packet timestamp, or your terminal scrollback for when you started the capture.
@@ -39,4 +37,4 @@ These sections are conceptual — restate what Part 6 actually showed (recon and
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab09-02-baseline-protocol-hierarchy.png`) — no new captures needed.
+Reference your screenshots (e.g. `media/lab09-02-baseline-protocol-hierarchy.png`)

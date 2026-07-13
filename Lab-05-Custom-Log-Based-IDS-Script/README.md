@@ -64,8 +64,7 @@ sudo apt install -y python3-pip
 pip3 install requests
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing `python3 --version` and the successful `pip3 install requests`.
-> Save as `lab05-01-python-setup.png` → `![Python and requests installed](media/lab05-01-python-setup.png)`
+![Python and requests installed](media/lab05-01-python-setup.png)
 
 ---
 
@@ -240,8 +239,6 @@ if __name__ == "__main__":
 
 Save and exit.
 
-> 📸 **CAPTURE THIS:** No screenshot needed here — you'll capture the script running in the next part.
-
 ---
 
 ## Part 4 — Run the Detector
@@ -252,8 +249,7 @@ python3 ~/detect_bruteforce.py
 
 Leave it running. You should see it print a "Poll complete" line every 10 seconds, even with nothing happening yet.
 
-> 📸 **CAPTURE THIS:** Terminal showing the script running with a few idle poll cycles.
-> Save as `lab05-02-detector-running-idle.png` → `![Detector script running](media/lab05-02-detector-running-idle.png)`
+![Detector script running](media/lab05-02-detector-running-idle.png)
 
 ---
 
@@ -273,13 +269,11 @@ Watch your ELK-SIEM terminal — within one or two poll cycles after the attack 
 [ALERT SENT] 192.168.56.101 — 5 failures in 60s — <document id>
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing the `[ALERT SENT]` line firing.
-> Save as `lab05-03-alert-sent.png` → `![Custom detector alert fired](media/lab05-03-alert-sent.png)`
+![Custom detector alert fired](media/lab05-03-alert-sent.png)
 
 **Run Hydra a second time immediately after**, without waiting — you should now see `[SUPPRESSED] ... still in cooldown` instead of a second alert. This confirms your cooldown logic is doing its job.
 
-> 📸 **CAPTURE THIS:** Terminal showing a `[SUPPRESSED]` line on the second attack run.
-> Save as `lab05-04-cooldown-suppression.png` → `![Cooldown suppression working](media/lab05-04-cooldown-suppression.png)`
+![Cooldown suppression working](media/lab05-04-cooldown-suppression.png)
 
 ---
 
@@ -295,8 +289,7 @@ curl "http://192.168.56.102:9200/custom-ids-alerts-*/_search?pretty"
 
 You should see your structured alert document with all the fields your script built.
 
-> 📸 **CAPTURE THIS:** This `curl` output.
-> Save as `lab05-05-alert-in-elasticsearch.png` → `![Alert confirmed in Elasticsearch](media/lab05-05-alert-in-elasticsearch.png)`
+![Alert confirmed in Elasticsearch](media/lab05-05-alert-in-elasticsearch.png)
 
 ### 6.2 Create a Kibana Data View
 
@@ -311,8 +304,7 @@ Browser: `http://192.168.56.102:5601` → **Stack Management → Data Views → 
 
 **Discover** → select `Custom IDS Alerts` → confirm your alert document is visible with all its fields.
 
-> 📸 **CAPTURE THIS:** Kibana Discover showing the alert document.
-> Save as `lab05-06-kibana-custom-alert.png` → `![Custom alert visible in Kibana](media/lab05-06-kibana-custom-alert.png)`
+![Custom alert visible in Kibana](media/lab05-06-kibana-custom-alert.png)
 
 ---
 
@@ -355,8 +347,7 @@ sudo journalctl -u bruteforce-detector -f
 
 (Press `Ctrl+C` to stop following the log — the service keeps running in the background either way.)
 
-> 📸 **CAPTURE THIS:** Terminal showing the service active and journal output.
-> Save as `lab05-07-systemd-service-running.png` → `![Detector running as a systemd service](media/lab05-07-systemd-service-running.png)`
+![Detector running as a systemd service](media/lab05-07-systemd-service-running.png)
 
 ---
 
@@ -366,18 +357,6 @@ sudo journalctl -u bruteforce-detector -f
 - [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
 ---
-
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab05-01-python-setup.png` | Python 3 and `requests` verified/installed |
-| `lab05-02-detector-running-idle.png` | Detector script running, idle poll cycles |
-| `lab05-03-alert-sent.png` | `[ALERT SENT]` line firing during attack |
-| `lab05-04-cooldown-suppression.png` | `[SUPPRESSED]` line confirming cooldown logic |
-| `lab05-05-alert-in-elasticsearch.png` | Alert document confirmed in Elasticsearch |
-| `lab05-06-kibana-custom-alert.png` | Alert visible in Kibana Discover |
-| `lab05-07-systemd-service-running.png` | Detector running as a systemd service (optional) |
 
 ## Troubleshooting
 
@@ -394,18 +373,3 @@ sudo journalctl -u bruteforce-detector -f
 - **`requests.exceptions.ConnectionError`:** confirm Elasticsearch is actually running (`curl http://192.168.56.102:9200` in a separate terminal) before assuming the script is broken.
 - **Every poll cycle re-alerts on the same old attack, ignoring cooldown:** double-check your system clock — if `datetime.now(timezone.utc)` is producing inconsistent values (e.g. after a VM was paused/resumed), the cooldown math can misbehave. Restarting the script resets its in-memory state cleanly if this happens.
 - **systemd service fails to start:** check `sudo journalctl -u bruteforce-detector -n 50 --no-pager` for the real error — common causes are an incorrect path in `ExecStart` (confirm with `realpath ~/detect_bruteforce.py`) or the `User=` line not matching your actual username.
-
-## Completion Checklist
-
-- [ ] Python 3 and `requests` verified/installed on ELK-SIEM
-- [ ] Detection script written and understood (not just copy-pasted — you can explain each part)
-- [ ] Script runs and idles cleanly with no attack happening
-- [ ] Hydra attack triggers a real `[ALERT SENT]` line
-- [ ] Second immediate attack correctly triggers `[SUPPRESSED]` (cooldown working)
-- [ ] Alert confirmed in Elasticsearch via `curl`
-- [ ] Kibana data view created and alert visible in Discover
-- [ ] (Optional) Script deployed as a systemd service
-- [ ] All 6–7 screenshots captured and named per convention
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 6 — Beaconing Traffic Detection Lab**.

@@ -1,7 +1,5 @@
 # Lab 2 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time of Scans
 
 The timestamp printed at the top of your first Nmap scan's output (the `-sS` scan from Part 5):
@@ -29,4 +27,4 @@ Conceptual sections — restate the cardinality-based rule you built (Part 8) an
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab02-05-nmap-syn-scan.png`) — no new captures needed.
+Reference your  screenshots (e.g. `media/lab02-05-nmap-syn-scan.png`)

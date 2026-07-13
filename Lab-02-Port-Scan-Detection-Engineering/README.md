@@ -55,8 +55,7 @@ sudo apt update
 sudo apt install -y nmap
 ```
 
-> 📸 **CAPTURE THIS:** Terminal output of `nmap --version`.
-> Save as `lab02-01-nmap-version-check.png` → `![Nmap installed](media/lab02-01-nmap-version-check.png)`
+![Nmap installed](media/lab02-01-nmap-version-check.png)
 
 ---
 
@@ -80,8 +79,7 @@ sudo iptables -L INPUT -v -n
 
 You should see a `LOG` line referencing `tcp flags:0x17/0x02`.
 
-> 📸 **CAPTURE THIS:** Terminal showing the `iptables -L INPUT -v -n` output with the LOG rule visible.
-> Save as `lab02-02-iptables-log-rule.png` → `![iptables logging rule added](media/lab02-02-iptables-log-rule.png)`
+![iptables logging rule added](media/lab02-02-iptables-log-rule.png)
 
 ### 2.2 Extend syslog Forwarding to Include Kernel Messages
 
@@ -113,8 +111,7 @@ Save and exit, then restart:
 sudo /etc/init.d/sysklogd restart
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing `head -15 /etc/syslog.conf` with the new `kern.*` line, and the successful restart.
-> Save as `lab02-03-syslog-kern-forwarding.png` → `![Kernel log forwarding added](media/lab02-03-syslog-kern-forwarding.png)`
+![Kernel log forwarding added](media/lab02-03-syslog-kern-forwarding.png)
 
 Hold off on generating a test event here — do it in Part 3.1 instead, **after** the Logstash pipeline is updated. Testing now would route the event through the old Lab 1 pipeline (no `port_scan` branch yet), landing it in `ssh-auth-logs-*` as an unparsed raw message instead of `portscan-logs-*`.
 
@@ -192,8 +189,7 @@ curl "http://192.168.56.102:9200/portscan-logs-*/_search?pretty"
 
 You should see one document from your Part 2.3 `curl` test, with `src_ip`, `dst_ip`, and `dst_port` populated as separate fields — not just buried in the raw `message` text.
 
-> 📸 **CAPTURE THIS:** This `curl` output showing the parsed fields.
-> Save as `lab02-04-parsed-scan-event.png` → `![Parsed port scan event fields](media/lab02-04-parsed-scan-event.png)`
+![Parsed port scan event fields](media/lab02-04-parsed-scan-event.png)
 
 **If `src_ip`/`dst_port` are missing** and only `message` shows the raw line, the grok pattern didn't match — check your iptables log line's actual field order with `sudo tail -5 /var/log/messages` on Metasploitable2 and compare it against the grok pattern above; older iptables builds sometimes order fields slightly differently.
 
@@ -241,8 +237,7 @@ sudo nmap -sS -T0 --top-ports 10 192.168.56.103
 
 `sudo` is required for `-sS`/`-sA` (raw packet crafting needs root); `-sT` does not need it.
 
-> 📸 **CAPTURE THIS:** Terminal showing the completed `-sS` scan output (open ports list).
-> Save as `lab02-05-nmap-syn-scan.png` → `![Nmap SYN scan results](media/lab02-05-nmap-syn-scan.png)`
+![Nmap SYN scan results](media/lab02-05-nmap-syn-scan.png)
 
 ---
 
@@ -254,8 +249,7 @@ This is the core design decision of the lab: **counting packets is the wrong det
 
 Hamburger menu → **Discover** → data view `Port Scan Logs`. You should see a burst of events, each with a different `dst_port` value, all from `src_ip: 192.168.56.101`.
 
-> 📸 **CAPTURE THIS:** Discover view showing the scan burst with visible `dst_port` field values.
-> Save as `lab02-06-discover-scan-burst.png` → `![Port scan burst in Discover](media/lab02-06-discover-scan-burst.png)`
+![Port scan burst in Discover](media/lab02-06-discover-scan-burst.png)
 
 ### 6.2 Build a Lens Visualization Using Unique Count
 
@@ -269,8 +263,7 @@ Hamburger menu → **Discover** → data view `Port Scan Logs`. You should see a
 8. Title: **Unique Ports Touched Per Minute**
 9. **Save**
 
-> 📸 **CAPTURE THIS:** The finished Lens chart showing a clear spike in unique port count during your scan window.
-> Save as `lab02-07-lens-unique-ports-chart.png` → `![Unique ports touched chart](media/lab02-07-lens-unique-ports-chart.png)`
+![Unique ports touched chart](media/lab02-07-lens-unique-ports-chart.png)
 
 ---
 
@@ -299,8 +292,7 @@ src_ip: "192.168.56.101"
 
 Sort by `@timestamp` and look at how many **distinct** `dst_port` values appear in any single minute during your Part 7.1 test versus during your Part 5 scans. The benign test should show 2–3; your `-sS`/`-sT` scans should show dozens (Nmap's default port list is 1000 ports).
 
-> 📸 **CAPTURE THIS:** Discover view filtered to your benign test's timeframe, showing only 2–3 distinct ports touched.
-> Save as `lab02-08-benign-traffic-comparison.png` → `![Benign traffic port count comparison](media/lab02-08-benign-traffic-comparison.png)`
+![Benign traffic port count comparison](media/lab02-08-benign-traffic-comparison.png)
 
 ### 7.3 Pick a Threshold
 
@@ -330,15 +322,13 @@ Reminder from Lab 1: Kibana's Alerting feature needs its one-time encryption key
 7. Name: **Port Scan Threshold Alert**
 8. **Save**
 
-> 📸 **CAPTURE THIS:** The rule configuration screen showing the cardinality/threshold setup.
-> Save as `lab02-09-alert-rule-config.png` → `![Port scan alert rule configuration](media/lab02-09-alert-rule-config.png)`
+![Port scan alert rule configuration](media/lab02-09-alert-rule-config.png)
 
 ### 8.1 Confirm It Fired
 
 Re-run one of the Part 5 scans (`-sS` is fastest), then check **Stack Management → Rules → Port Scan Threshold Alert → Alerts** tab for "Active" status.
 
-> 📸 **CAPTURE THIS:** The rule's Alerts/execution history showing it fired.
-> Save as `lab02-10-alert-fired-history.png` → `![Port scan alert fired](media/lab02-10-alert-fired-history.png)`
+![Port scan alert fired](media/lab02-10-alert-fired-history.png)
 
 ---
 
@@ -346,25 +336,10 @@ Re-run one of the Part 5 scans (`-sS` is fastest), then check **Stack Management
 
 As with Lab 1, two separate files work together in this lab's folder:
 
-- [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
+- [`Lab2-Investigation-Writeup-Template.docx`](./Lab2-Investigation-Writeup-Template.docx) — the clean, fillable Word document.
 - [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
 ---
-
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab02-01-nmap-version-check.png` | Nmap installed/verified |
-| `lab02-02-iptables-log-rule.png` | iptables LOG rule added on Metasploitable2 |
-| `lab02-03-syslog-kern-forwarding.png` | Kernel log forwarding added to syslog config |
-| `lab02-04-parsed-scan-event.png` | Grok-parsed scan event fields in Elasticsearch |
-| `lab02-05-nmap-syn-scan.png` | Completed Nmap SYN scan |
-| `lab02-06-discover-scan-burst.png` | Scan burst visible in Kibana Discover |
-| `lab02-07-lens-unique-ports-chart.png` | Unique-ports-per-minute Lens chart |
-| `lab02-08-benign-traffic-comparison.png` | Benign traffic showing low port count, for contrast |
-| `lab02-09-alert-rule-config.png` | Alert rule cardinality/threshold configuration |
-| `lab02-10-alert-fired-history.png` | Alert firing in execution history |
 
 ## Troubleshooting
 
@@ -374,17 +349,3 @@ As with Lab 1, two separate files work together in this lab's folder:
 - **UDP scan (`-sU`) takes a very long time or appears to hang:** this is normal — UDP scanning is inherently slow because Nmap must wait for ICMP "port unreachable" responses or timeouts for each port. `--top-ports 20` keeps it manageable for this lab; a full 65535-port UDP scan can take hours.
 - **Alert never shows "Active" despite a clear spike in Discover:** double check you're using the DSL/cardinality-based threshold (Part 8, step 5) rather than the basic document-count threshold — a basic count threshold will fire on *any* burst of traffic, not specifically a many-unique-ports burst, and won't reflect the actual detection logic this lab is teaching.
 
-## Completion Checklist
-
-- [ ] Nmap verified on Kali
-- [ ] iptables LOG rule added on Metasploitable2
-- [ ] Kernel log forwarding configured and confirmed with a test event
-- [ ] Logstash pipeline extended and parsing `src_ip`/`dst_port` correctly
-- [ ] All 6 Nmap scan types run successfully
-- [ ] Lens visualization built showing unique ports per minute
-- [ ] False-positive comparison completed (benign vs. scan traffic)
-- [ ] Threshold alert rule created using cardinality aggregation, confirmed firing
-- [ ] All 10 screenshots captured and named per convention
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 3 — Reverse Shell Network Detection Study**.

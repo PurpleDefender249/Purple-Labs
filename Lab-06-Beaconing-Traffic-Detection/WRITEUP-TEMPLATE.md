@@ -1,7 +1,5 @@
 # Lab 6 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab6-Investigation-Writeup-Template.docx`](./Lab6-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time
 
 The timestamp of your first beacon check-in arriving in Kali's `ncat` listener (Part 2.2), or the first event's `@timestamp` in Elasticsearch:
@@ -32,4 +30,4 @@ Conceptual sections — restate the coefficient-of-variation approach from Part 
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab06-06-beacon-analysis-verdict.png`) — no new captures needed.
+Reference your screenshots (e.g. `media/lab06-06-beacon-analysis-verdict.png`)

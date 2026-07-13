@@ -1,7 +1,5 @@
 # Lab 4 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab4-Investigation-Writeup-Template.docx`](./Lab4-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for. This lab's timeline pulls from multiple sources at once — that's the point of the exercise.
-
 ## Date/Time
 
 From your Part 2.2 recon check — the earliest `@timestamp` returned by:
@@ -28,4 +26,4 @@ These sections are already written as general findings — confirm they match yo
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab04-03-vsftpd-backdoor-shell.png`) — no new captures needed.
+Reference your  screenshots (e.g. `media/lab04-03-vsftpd-backdoor-shell.png`)

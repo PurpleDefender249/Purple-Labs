@@ -51,8 +51,7 @@ If missing (unlikely, since it ships with Nmap):
 sudo apt install -y ncat
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing `ncat --version`.
-> Save as `lab06-01-ncat-verify.png` → `![Ncat verified](media/lab06-01-ncat-verify.png)`
+![Ncat verified](media/lab06-01-ncat-verify.png)
 
 ---
 
@@ -96,8 +95,7 @@ chmod +x ~/beacon.sh
 
 Leave this running too. Switch back to your Kali listener tab — you should see a new "check-in" message arrive every 30 seconds.
 
-> 📸 **CAPTURE THIS:** Kali terminal showing at least 3–4 beacon check-ins arriving over time (wait ~2 minutes).
-> Save as `lab06-02-beacon-checkins-arriving.png` → `![Beacon check-ins arriving](media/lab06-02-beacon-checkins-arriving.png)`
+![Beacon check-ins arriving](media/lab06-02-beacon-checkins-arriving.png)
 
 ---
 
@@ -123,8 +121,7 @@ tcp.port == 5555
 
 **Statistics → I/O Graph**. You should see a strikingly regular pattern — evenly spaced spikes, roughly 30 seconds apart, unlike the bursty, irregular pattern of interactive traffic from Lab 3.
 
-> 📸 **CAPTURE THIS:** The Wireshark I/O Graph showing the regular beacon spikes.
-> Save as `lab06-03-wireshark-io-graph-beacon.png` → `![Beacon pattern in I/O Graph](media/lab06-03-wireshark-io-graph-beacon.png)`
+![Beacon pattern in I/O Graph](media/lab06-03-wireshark-io-graph-beacon.png)
 
 Stop and save the capture: **File → Save As** → `lab6-beacon-capture.pcapng`.
 
@@ -150,8 +147,7 @@ Confirm it:
 sudo iptables -L OUTPUT -v -n
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing the OUTPUT chain LOG rule.
-> Save as `lab06-04-iptables-output-rule.png` → `![iptables OUTPUT logging rule](media/lab06-04-iptables-output-rule.png)`
+![iptables OUTPUT logging rule](media/lab06-04-iptables-output-rule.png)
 
 The `kern.*` syslog forwarding from Lab 2 already covers this — no changes needed there.
 
@@ -224,8 +220,7 @@ curl "http://192.168.56.102:9200/beacon-logs-*/_search?pretty&size=5&sort=@times
 
 You should see parsed events with `event_type: beacon` and populated `src_ip`/`dst_port` fields.
 
-> 📸 **CAPTURE THIS:** This `curl` output showing parsed beacon events.
-> Save as `lab06-05-beacon-events-elasticsearch.png` → `![Beacon events in Elasticsearch](media/lab06-05-beacon-events-elasticsearch.png)`
+![Beacon events in Elasticsearch](media/lab06-05-beacon-events-elasticsearch.png)
 
 ---
 
@@ -343,8 +338,7 @@ python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103
 
 You should see a **VERDICT: Highly regular timing** result, with a coefficient of variation well under 0.15 (your beacon's 30-second interval should be extremely consistent).
 
-> 📸 **CAPTURE THIS:** Terminal showing the script's full output and verdict for the beacon traffic.
-> Save as `lab06-06-beacon-analysis-verdict.png` → `![Beacon analysis verdict](media/lab06-06-beacon-analysis-verdict.png)`
+![Beacon analysis verdict](media/lab06-06-beacon-analysis-verdict.png)
 
 ---
 
@@ -389,8 +383,7 @@ python3 ~/analyze_beaconing.py "beacon-logs-*" 192.168.56.103 2026-07-09T08:15:0
 
 You should now see a clean, low coefficient of variation for the beacon window and a clearly higher one for the irregular window — a real, isolated comparison instead of one contaminated by unrelated timing gaps.
 
-> 📸 **CAPTURE THIS:** Terminal showing this second analysis run and its (likely less confident, or mixed) verdict.
-> Save as `lab06-07-irregular-traffic-verdict.png` → `![Irregular traffic verdict comparison](media/lab06-07-irregular-traffic-verdict.png)`
+![Irregular traffic verdict comparison](media/lab06-07-irregular-traffic-verdict.png)
 
 ---
 
@@ -401,18 +394,6 @@ You should now see a clean, low coefficient of variation for the beacon window a
 
 ---
 
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab06-01-ncat-verify.png` | Ncat verified on Kali |
-| `lab06-02-beacon-checkins-arriving.png` | Beacon check-ins arriving on schedule |
-| `lab06-03-wireshark-io-graph-beacon.png` | Regular timing visible in Wireshark I/O Graph |
-| `lab06-04-iptables-output-rule.png` | iptables OUTPUT logging rule added |
-| `lab06-05-beacon-events-elasticsearch.png` | Parsed beacon events in Elasticsearch |
-| `lab06-06-beacon-analysis-verdict.png` | Timing analysis script's beacon verdict |
-| `lab06-07-irregular-traffic-verdict.png` | Comparison verdict against irregular traffic |
-
 ## Troubleshooting
 
 - **`ncat -lvk` doesn't seem to accept repeat connections:** double-check you used `ncat`, not plain `nc` — this is exactly the capability gap this lab's Part 1 called out.
@@ -421,18 +402,3 @@ You should now see a clean, low coefficient of variation for the beacon window a
 - **Coefficient of variation is wildly high (e.g. >1) even though the beacon looked regular in Wireshark:** check your printed gap list for one enormous outlier — most likely a pause between work sessions (hours, not seconds) rather than actual traffic irregularity. This single value can dominate the mean/stdev calculation. Use the time-range arguments added in Part 6.3 (`start_iso`/`end_iso`) to scope your analysis to a clean, contiguous window instead of your entire session history.
 - **Analyzer script errors with "Not enough events":** you need at least 3 beacon check-ins logged before there's enough data for two gaps to compute a standard deviation from — let the beacon run longer before analyzing.
 - **Coefficient of variation for the beacon isn't as low as expected:** minor timing jitter from `nc -w 2`'s connection overhead is normal and won't meaningfully affect the result; if it's wildly irregular, confirm `sleep 30` wasn't accidentally edited to something randomized in your script.
-
-## Completion Checklist
-
-- [ ] Ncat verified on Kali
-- [ ] Beacon script written and running, check-ins confirmed arriving every 30s
-- [ ] Wireshark capture showing regular I/O Graph pattern
-- [ ] iptables OUTPUT logging rule added and confirmed
-- [ ] Logstash pipeline extended, beacon events confirmed parsed in Elasticsearch
-- [ ] Timing analysis script written and run against beacon traffic (regular verdict)
-- [ ] Irregular traffic generated and analyzed for comparison
-- [ ] All 7 screenshots captured and named per convention
-- [ ] Both `.pcapng` file and script saved
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 7 — Exploitation Visibility Analysis**.

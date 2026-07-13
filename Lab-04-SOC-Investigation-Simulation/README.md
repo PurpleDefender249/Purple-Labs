@@ -78,8 +78,7 @@ nmap -sV -p- 192.168.56.103
 
 `-sV` grabs service/version banners; `-p-` scans all 65535 ports (this will take several minutes — that's normal, let it run).
 
-> 📸 **CAPTURE THIS:** Terminal showing the completed scan output, specifically the line identifying the FTP service and its version.
-> Save as `lab04-01-nmap-full-recon-scan.png` → `![Full reconnaissance scan](media/lab04-01-nmap-full-recon-scan.png)`
+![Full reconnaissance scan](media/lab04-01-nmap-full-recon-scan.png)
 
 Look for:
 
@@ -129,8 +128,7 @@ show options
 
 Review the options output to confirm `RHOSTS` is set correctly.
 
-> 📸 **CAPTURE THIS:** The `show options` output confirming the exploit is configured.
-> Save as `lab04-02-metasploit-exploit-config.png` → `![Metasploit exploit configured](media/lab04-02-metasploit-exploit-config.png)`
+![Metasploit exploit configured](media/lab04-02-metasploit-exploit-config.png)
 
 ### 3.4 Run the Exploit
 
@@ -140,8 +138,7 @@ run
 
 This particular backdoor doesn't need a separate listener/handler — a successful trigger opens a shell directly back to your `msfconsole` session on port 6200. You should land at a command prompt (no `msf6 >` prefix — you're now in a raw shell on the target).
 
-> 📸 **CAPTURE THIS:** The exploit output showing the backdoor triggering and the resulting shell prompt.
-> Save as `lab04-03-vsftpd-backdoor-shell.png` → `![vsftpd backdoor shell obtained](media/lab04-03-vsftpd-backdoor-shell.png)`
+![vsftpd backdoor shell obtained](media/lab04-03-vsftpd-backdoor-shell.png)
 
 **If the exploit reports failure or the connection resets:** this specific backdoor is timing-sensitive on some builds — see Troubleshooting below before trying again.
 
@@ -160,8 +157,7 @@ cat /etc/passwd
 
 Note that this shell is **root** — this particular backdoor doesn't just get you a foothold, it hands over full control immediately, which is part of why this vulnerability is treated as critical severity in real environments.
 
-> 📸 **CAPTURE THIS:** Terminal showing the `whoami`/`id` output confirming root access.
-> Save as `lab04-04-root-access-confirmed.png` → `![Root access confirmed](media/lab04-04-root-access-confirmed.png)`
+![Root access confirmed](media/lab04-04-root-access-confirmed.png)
 
 Stop the Wireshark capture and save it: **File → Save As** → `lab4-exploitation-capture.pcapng`.
 
@@ -194,8 +190,7 @@ Note the timestamp of:
 - The first port-21 (FTP) packet — **Stage 2: exploitation attempt begins**
 - The first port-6200 packet — **Stage 3: backdoor shell opens**
 
-> 📸 **CAPTURE THIS:** Wireshark filtered view showing both the port 21 and port 6200 traffic with visible timestamps.
-> Save as `lab04-05-wireshark-exploit-timestamps.png` → `![Exploitation timestamps in Wireshark](media/lab04-05-wireshark-exploit-timestamps.png)`
+![Exploitation timestamps in Wireshark](media/lab04-05-wireshark-exploit-timestamps.png)
 
 ---
 
@@ -212,8 +207,7 @@ Since this lab pulls together Labs 1 and 2's infrastructure, it's a natural poin
 5. Title: **SOC Overview Dashboard**
 6. **Save**
 
-> 📸 **CAPTURE THIS:** The finished combined dashboard.
-> Save as `lab04-06-soc-overview-dashboard.png` → `![Combined SOC overview dashboard](media/lab04-06-soc-overview-dashboard.png)`
+![Combined SOC overview dashboard](media/lab04-06-soc-overview-dashboard.png)
 
 ---
 
@@ -241,35 +235,9 @@ Both include the full timeline table structure from Part 7 — the `.docx` ready
 
 ---
 
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab04-01-nmap-full-recon-scan.png` | Full service/version reconnaissance scan |
-| `lab04-02-metasploit-exploit-config.png` | Metasploit exploit configured |
-| `lab04-03-vsftpd-backdoor-shell.png` | Backdoor triggered, shell obtained |
-| `lab04-04-root-access-confirmed.png` | Root access confirmed via `whoami`/`id` |
-| `lab04-05-wireshark-exploit-timestamps.png` | Exploitation and shell timestamps in Wireshark |
-| `lab04-06-soc-overview-dashboard.png` | Combined Kibana dashboard (optional) |
-
 ## Troubleshooting
 
 - **`vsftpd_234_backdoor` exploit fails or the connection resets:** this backdoor is known to be timing-sensitive — the malicious code only triggers within a narrow window after a specially crafted username is sent. If `run` fails, simply try it again once or twice; this is normal behavior for this specific exploit, not a sign of misconfiguration.
 - **No shell prompt appears after "backdoor service has been spawned":** give it 10–15 seconds, then press Enter — the shell is often silently ready but hasn't printed a prompt yet.
 - **Nothing shows up in `portscan-logs-*` for this scan:** confirm Lab 2's infrastructure is still intact — see Part 1's health check, and revisit Lab 2's troubleshooting section if the iptables rule or Logstash pipeline didn't survive a shutdown/restart cycle.
 - **Dashboard in Part 6 shows "no data":** double check the dashboard's time range (top-right) actually covers when you ran this lab's activity — Kibana dashboards don't automatically inherit a wide default range.
-
-## Completion Checklist
-
-- [ ] Environment health-checked before starting
-- [ ] Full reconnaissance scan completed and confirmed in `portscan-logs-*`
-- [ ] vsftpd 2.3.4 backdoor exploited successfully
-- [ ] Root shell confirmed via `whoami`/`id`
-- [ ] Wireshark capture saved with exploitation and shell traffic
-- [ ] SIEM checked and confirmed to show no exploitation/shell evidence
-- [ ] Combined Kibana dashboard built (optional)
-- [ ] Full incident timeline table completed, explicitly noting detection gaps
-- [ ] All 6 screenshots captured and named per convention
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 5 — Custom Log-Based Intrusion Detection Script**.

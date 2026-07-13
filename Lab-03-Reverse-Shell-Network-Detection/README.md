@@ -60,8 +60,7 @@ nc -h 2>&1 | head -15
 
 Kali's default `nc` is often `ncat` (Nmap's Netcat rewrite) or `netcat-openbsd`, and **neither supports `-e` by default** for security reasons. This doesn't block us — Kali is only acting as the **listener** in this lab, and listening never requires `-e`. Only the machine *sending* the shell (Metasploitable2) needs it.
 
-> 📸 **CAPTURE THIS:** Terminal showing both `nc -h` outputs side by side (or two separate screenshots), confirming Metasploitable2 has `-e`.
-> Save as `lab03-01-netcat-version-check.png` → `![Netcat capability check](media/lab03-01-netcat-version-check.png)`
+![Netcat capability check](media/lab03-01-netcat-version-check.png)
 
 ---
 
@@ -82,8 +81,7 @@ sudo wireshark
 
 If Wireshark's GUI window doesn't render properly over your VM console, an alternative is capturing via command line with `tcpdump` and opening the resulting file in Wireshark afterward — mentioned in Troubleshooting if you hit this.
 
-> 📸 **CAPTURE THIS:** Terminal showing `wireshark --version` output.
-> Save as `lab03-02-wireshark-version-check.png` → `![Wireshark installed](media/lab03-02-wireshark-version-check.png)`
+![Wireshark installed](media/lab03-02-wireshark-version-check.png)
 
 ---
 
@@ -114,8 +112,7 @@ sudo wireshark
 2. In the capture filter box (before starting), type: `host 192.168.56.103`
 3. Click the blue shark-fin **Start** button
 
-> 📸 **CAPTURE THIS:** Wireshark's interface selection screen with `eth0` highlighted and the capture filter visible.
-> Save as `lab03-03-wireshark-capture-start.png` → `![Wireshark capture started](media/lab03-03-wireshark-capture-start.png)`
+![Wireshark capture started](media/lab03-03-wireshark-capture-start.png)
 
 ### 3.3 Trigger the Reverse Shell from Metasploitable2
 
@@ -139,8 +136,7 @@ ls -la /home
 cat /etc/passwd
 ```
 
-> 📸 **CAPTURE THIS:** Terminal showing the established reverse shell with a couple of command outputs.
-> Save as `lab03-04-netcat-reverse-shell-active.png` → `![Netcat reverse shell active](media/lab03-04-netcat-reverse-shell-active.png)`
+![Netcat reverse shell active](media/lab03-04-netcat-reverse-shell-active.png)
 
 ### 3.5 Stop the Capture
 
@@ -166,8 +162,7 @@ Press Enter. You should see a clean TCP stream: a handshake (`SYN`, `SYN-ACK`, `
 
 Right-click any packet in that stream → **Follow → TCP Stream**. A new window opens showing the entire session's data — including your `whoami`, `id`, `ls`, and `cat /etc/passwd` commands and their output, **in plaintext**. This is the single clearest piece of evidence that this is a shell: no encryption, full command/response visible to anyone capturing the traffic.
 
-> 📸 **CAPTURE THIS:** The Follow TCP Stream window showing your commands and their plaintext output.
-> Save as `lab03-05-follow-tcp-stream.png` → `![Reconstructed shell session](media/lab03-05-follow-tcp-stream.png)`
+![Reconstructed shell session](media/lab03-05-follow-tcp-stream.png)
 
 ### 4.3 Identify the Network-Level Indicators
 
@@ -177,8 +172,7 @@ Close the stream window. Look at the filtered packet list and note:
 2. **Port choice:** `4444` is not a registered service port. On a real network, any outbound connection from a server to an unusual high port is worth a second look on its own.
 3. **Packet timing/size:** click **Statistics → Conversations**, select the TCP tab, and look at the packet count vs. duration for this stream. Interactive shell traffic produces many small packets spread over the session's whole duration (one packet roughly per keystroke/response), unlike a file transfer (few packets, large, front-loaded) or a normal web request (a handful of packets, done in under a second).
 
-> 📸 **CAPTURE THIS:** The Statistics → Conversations window showing this stream's packet count and duration.
-> Save as `lab03-06-conversation-statistics.png` → `![TCP conversation statistics](media/lab03-06-conversation-statistics.png)`
+![TCP conversation statistics](media/lab03-06-conversation-statistics.png)
 
 ---
 
@@ -237,8 +231,7 @@ Back in your Metasploitable2 terminal:
 
 Your `msfconsole` handler should show a new session opening.
 
-> 📸 **CAPTURE THIS:** The `msfconsole` output showing the session established.
-> Save as `lab03-07-msfvenom-shell-established.png` → `![Metasploit payload shell established](media/lab03-07-msfvenom-shell-established.png)`
+![Metasploit payload shell established](media/lab03-07-msfvenom-shell-established.png)
 
 Run a couple of commands in this session too (`whoami`, `id`), then stop and save this Wireshark capture as `lab3-msfvenom-shell.pcapng`.
 
@@ -248,8 +241,7 @@ Filter this new capture to `tcp.port == 4445` and Follow TCP Stream, same as Par
 
 **What to look for in your write-up:** is the underlying network behavior actually any different from the raw Netcat version? (Spoiler: no — same direction anomaly, same small-packet interactive timing, same plaintext reconstruction. The delivery mechanism differed; the network fingerprint of "a shell is running" didn't.) This is an important, slightly uncomfortable lesson: sophisticated payload generation tools don't inherently produce sneakier *network* traffic — the evasion techniques that matter here operate at a different layer (encryption, protocol mimicry, timing jitter) than what `msfvenom`'s basic payload changes.
 
-> 📸 **CAPTURE THIS:** Side-by-side comparison — or two screenshots — of both Follow TCP Stream windows.
-> Save as `lab03-08-shell-comparison.png` → `![Comparing both reverse shell captures](media/lab03-08-shell-comparison.png)`
+![Comparing both reverse shell captures](media/lab03-08-shell-comparison.png)
 
 ---
 
@@ -270,23 +262,14 @@ They won't — a reverse shell isn't a login event, so it's invisible to exactly
 
 Standalone files, same pattern as prior labs:
 
-- [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
+- [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx) — the clean, fillable Word document.
 - [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
 ---
 
-## Media Checklist for This Lab
+**Stand proud Jedi, you have reached a new milestone!:** You have successfully mapped the attacker's persistence mechanisms. To the next rabbit hole!.
 
-| Filename | What it shows |
-|---|---|
-| `lab03-01-netcat-version-check.png` | Netcat capability check on both machines |
-| `lab03-02-wireshark-version-check.png` | Wireshark installed/verified |
-| `lab03-03-wireshark-capture-start.png` | Wireshark capture started with filter |
-| `lab03-04-netcat-reverse-shell-active.png` | Established Netcat reverse shell |
-| `lab03-05-follow-tcp-stream.png` | Reconstructed plaintext shell session |
-| `lab03-06-conversation-statistics.png` | TCP conversation packet/timing statistics |
-| `lab03-07-msfvenom-shell-established.png` | Metasploit payload shell session established |
-| `lab03-08-shell-comparison.png` | Comparison of both captured shell sessions |
+---
 
 ## Troubleshooting
 
@@ -298,19 +281,3 @@ Standalone files, same pattern as prior labs:
   Press `Ctrl+C` to stop, then open the resulting `.pcap` file in Wireshark (`wireshark lab3-capture.pcap`) for analysis.
 - **Metasploit handler shows no session after running `shell.elf`:** double-check `LHOST`/`LPORT` in the handler exactly match what you compiled into the payload with `msfvenom`, and confirm Metasploitable2's firewall isn't blocking outbound (unlikely on this lab network, but check `sudo iptables -L OUTPUT -v -n` if stuck — note this is a different chain than the `INPUT` rule from Lab 2).
 - **`wget` fails on Metasploitable2:** confirm your `python3 -m http.server` is still running on Kali and that you used Kali's correct IP (`192.168.56.101`), not `localhost`.
-
-## Completion Checklist
-
-- [ ] Netcat capability verified on both machines
-- [ ] Wireshark verified on Kali
-- [ ] Netcat reverse shell established and captured
-- [ ] TCP stream reconstructed showing plaintext commands
-- [ ] Conversation statistics reviewed for timing/size pattern
-- [ ] Metasploit payload generated, delivered, and executed
-- [ ] Second capture compared against the first
-- [ ] Detection gap in `auth.log` confirmed and noted
-- [ ] All 8 screenshots captured and named per convention
-- [ ] Both `.pcapng` files saved
-- [ ] Investigation write-up completed using the template
-
-Once every box is checked, you're ready for **Lab 4 — End-to-End SOC Investigation Simulation**.

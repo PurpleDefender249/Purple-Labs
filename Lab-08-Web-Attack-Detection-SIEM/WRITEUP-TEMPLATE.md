@@ -1,7 +1,5 @@
 # Lab 8 — Write-Up Guide
 
-> This file does **not** contain the write-up template itself — that lives in [`Lab8-Investigation-Writeup-Template.docx`](./Lab8-Investigation-Writeup-Template.docx), left clean and instruction-free. This guide explains **where to find** the information each field in that document is asking for.
-
 ## Date/Time
 
 The `@timestamp` of your Part 4.1 SQL injection request — check via:
@@ -33,4 +31,4 @@ Conceptual sections — restate the three query types from Part 5 (suspicious pa
 
 ## Evidence
 
-Reference your existing screenshots by filename (e.g. `media/lab08-04-sqli-attack.png`) — no new captures needed.
+Reference your screenshots (e.g. `media/lab08-04-sqli-attack.png`)

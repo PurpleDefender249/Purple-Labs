@@ -8,15 +8,101 @@ By the end of this phase you will have three VMware virtual machines, all on the
 ```mermaid
 flowchart LR
     subgraph "VMware Network — 192.168.56.0/24"
-        K["Kali Linux\n192.168.56.101\n(already installed)"]
+        K["Kali Linux\n192.168.56.101\n(build in Part 0)"]
         U["Ubuntu Server + ELK\n192.168.56.102\n(build in Part B/C)"]
         M["Metasploitable2\n192.168.56.103\n(build in Part D)"]
     end
 ```
 
-You already have Kali at `192.168.56.101`. This phase adds the other two machines. Nothing here is lab-specific — you build this once, and reuse it for all 9 labs.
+---
 
-**Assumed starting point:** VMware (Workstation or Player) installed on your host, Kali Linux VM installed and working. Nothing else installed. Every tool below is installed from scratch.
+## Part 0 — Install VMware, Configure the Network, and Deploy Kali Linux
+
+### 0.1 Install VMware Workstation
+
+1. Go to https://www.vmware.com/products/workstation-pro.html (VMware Workstation Pro is now free for personal use) or https://www.vmware.com/products/workstation-player.html for the lighter free Player edition.
+2. Download the Windows installer.
+3. Run the installer, accept the license agreement, and use the default install location and options unless you have a specific reason to change them.
+4. Restart your host machine if prompted.
+5. Launch **VMware Workstation** once to confirm it opens correctly — you should land on its "Home" tab with no virtual machines listed yet.
+
+![VMware Workstation installed](media/00-00a-vmware-installed.png)
+
+### 0.2 Configure the Shared Virtual Network
+
+All three VMs in this course need to sit on the exact same isolated virtual network, with a specific subnet (`192.168.56.0/24`) — this must be set up **before** creating any VM, so every VM you build afterward can simply select it.
+
+1. In VMware Workstation, go to **Edit → Virtual Network Editor**. (If the options are grayed out, click **Change Settings** at the bottom — this requires administrator rights.)
+2. Look for an existing **Host-only** network (commonly named `VMnet1` or `VMnet2`). If none exists, click **Add Network...** and choose an unused VMnet number.
+3. Select that network, set its type to **Host-only** (uncheck "Connect a host virtual adapter to this network" is fine either way — leaving it checked lets your physical host machine also reach this network directly, which can be convenient but isn't required).
+4. Click **Subnet IP** / set the subnet manually to:
+   ```
+   192.168.56.0
+   ```
+   with subnet mask `255.255.255.0`.
+5. Make sure **"Use local DHCP service to distribute IP addresses to VMs"** is **unchecked** — every VM in this course uses a manually assigned static IP, not DHCP, so a competing DHCP server on this network would only cause confusion later.
+6. Click **Apply**, then **OK**.
+
+![Virtual Network Editor configured](media/00-00b-virtual-network-editor.png)
+
+Note which VMnet number you configured (e.g. `VMnet2`) — you'll select this exact network for all three VMs in this course.
+
+### 0.3 Download and Deploy the Kali Linux VM
+
+Rather than installing Kali from an ISO (a much longer process), Kali's team publishes ready-to-run VMware images, which is what this course uses.
+
+1. Go to https://www.kali.org/get-kali/#kali-virtual-machines
+2. Under **VMware**, download the 64-bit VMware image (a `.7z` archive).
+3. Extract the archive using [7-Zip](https://www.7-zip.org/) (Windows doesn't open `.7z` natively) — right-click the downloaded file → **7-Zip → Extract Here**, once 7-Zip is installed.
+4. In VMware Workstation: **File → Open**, browse into the extracted folder, and select the `.vmx` file.
+5. If prompted **"This virtual machine may have been moved or copied"**, choose **"I copied it"** (this regenerates the VM's network identity so it doesn't collide with anything).
+6. Before powering on, open **VM Settings → Network Adapter** and set it to **Custom: Specific virtual network** → select the exact VMnet you configured in Part 0.2.
+
+![Kali network adapter configured](media/00-00c-kali-network-adapter.png)
+
+7. Power on the VM. Default credentials: username `kali`, password `kali`.
+
+### 0.4 Set Kali's Static IP
+
+Kali's prebuilt image defaults to DHCP. Set a static IP matching this course's addressing scheme.
+
+Open a terminal in Kali and check the interface name:
+
+```bash
+ip a
+```
+
+Edit the Netplan config (adjust the interface name — likely `eth0` — to match what `ip a` actually showed):
+
+```bash
+sudo nano /etc/netplan/01-network-manager-all.yaml
+```
+
+Set it to:
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [192.168.56.101/24]
+      nameservers:
+        addresses: [8.8.8.8]
+```
+
+Apply it:
+
+```bash
+sudo netplan apply
+ip a
+```
+
+Confirm it now shows `192.168.56.101`.
+
+![Kali static IP configured](media/00-00d-kali-static-ip.png)
+
+**Milestone!:** you now have a working Kali VM at `192.168.56.101` on your dedicated lab network. The rest of this document (Parts A onward) builds the remaining two VMs on the same network.
 
 ---
 
@@ -27,11 +113,10 @@ Your Kali VM already has IP `192.168.56.101/24`, which tells us which VMware vir
 1. Open **VMware** → right-click your **Kali VM** → **Settings** → **Network Adapter**.
 2. Note which option is selected: usually either **Host-only**, or **Custom (VMnet_)** with a specific VMnet number. Write down the exact setting/name.
 
-> 📸 **CAPTURE THIS:** Screenshot of Kali's Network Adapter settings screen showing which network it's on.
-> Save as `00-01-kali-network-adapter-settings.png` → embed here:
-> `![Kali network adapter settings](media/00-01-kali-network-adapter-settings.png)`
+![Kali network adapter settings](media/00-01-kali-network-adapter-settings.png)
 
 3. Keep this exact setting in mind — you will select the **identical** option when creating the next two VMs in Parts B and D.
+
 
 ---
 
@@ -53,8 +138,7 @@ Your Kali VM already has IP `192.168.56.101/24`, which tells us which VMware vir
    - **CPU: 2 cores minimum.**
    - **Network Adapter:** set to the **same option you recorded in Part A** (e.g. Host-only / the same VMnet).
 
-> 📸 **CAPTURE THIS:** Screenshot of the VM hardware customization screen (RAM/CPU/Network settings) before install.
-> Save as `00-02-ubuntu-vm-hardware-settings.png` → `![Ubuntu VM hardware settings](media/00-02-ubuntu-vm-hardware-settings.png)`
+![Ubuntu VM hardware settings](media/00-02-ubuntu-vm-hardware-settings.png)
 
 ### B.3 Install Ubuntu Server
 
@@ -110,8 +194,7 @@ From your Kali terminal:
 ssh socadmin@192.168.56.102
 ```
 
-> 📸 **CAPTURE THIS:** Terminal screenshot from Kali showing a successful SSH login to the Ubuntu VM.
-> Save as `00-03-ssh-into-ubuntu-elk.png` → `![SSH into Ubuntu ELK VM](media/00-03-ssh-into-ubuntu-elk.png)`
+![SSH into Ubuntu ELK VM](media/00-03-ssh-into-ubuntu-elk.png)
 
 All commands in Part C are run **on this Ubuntu VM** (via this SSH session).
 
@@ -156,8 +239,7 @@ Your ELK-SIEM VM's only network adapter is **Host-only (VMnet2)**, static IP `19
 
 Your original static IP (`192.168.56.102` on `ens33`) is untouched — this NAT adapter is purely for package installation. Keep it attached; there's no harm leaving it on for the rest of the course, but it's not part of the "lab network" the other VMs communicate over.
 
-> 📸 **CAPTURE THIS:** Screenshot of `ip a` showing both interfaces (static Host-only + DHCP NAT).
-> Save as `00-03b-elk-dual-network-adapters.png` → `![ELK dual network adapters](media/00-03b-elk-dual-network-adapters.png)`
+![ELK dual network adapters](media/00-03b-elk-dual-network-adapters.png)
 
 ### C.1 Prerequisites
 
@@ -205,7 +287,7 @@ xpack.security.http.ssl.enabled: false
 xpack.security.transport.ssl.enabled: false
 ```
 
-> ⚠️ **Common mistake:** if you only delete the security auto-config block and leave the commented template above it, `path.data` and `path.logs` remain commented out (`#path.data: ...`) and Elasticsearch will fall back to writing inside `/usr/share/elasticsearch/data`, which isn't writable by the `elasticsearch` user — it will crash with `AccessDeniedException`. Replacing the whole file with the block above avoids this entirely.
+> ⚠️ **Attention!:** if you only delete the security auto-config block and leave the commented template above it, `path.data` and `path.logs` remain commented out (`#path.data: ...`) and Elasticsearch will fall back to writing inside `/usr/share/elasticsearch/data`, which isn't writable by the `elasticsearch` user — it will crash with `AccessDeniedException`. Replacing the whole file with the block above avoids this entirely.
 
 Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
@@ -216,7 +298,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now elasticsearch
 ```
 
-Verify (wait ~30 seconds for first boot):
+Verify (wait around 30 seconds for first time):
 
 ```bash
 curl http://192.168.56.102:9200
@@ -224,8 +306,7 @@ curl http://192.168.56.102:9200
 
 You should get back a JSON block with `"cluster_name"` and version info.
 
-> 📸 **CAPTURE THIS:** Terminal screenshot of the `curl` output above showing Elasticsearch responding.
-> Save as `00-04-elasticsearch-curl-verify.png` → `![Elasticsearch verify](media/00-04-elasticsearch-curl-verify.png)`
+![Elasticsearch verify](media/00-04-elasticsearch-curl-verify.png)
 
 ### C.4 Install and Configure Kibana
 
@@ -267,10 +348,9 @@ http://192.168.56.102:5601
 
 You should land on the Kibana home screen (no login needed, since security is disabled for this lab).
 
-> 📸 **CAPTURE THIS:** Screenshot of the Kibana home page loaded in the browser.
-> Save as `00-05-kibana-home-page.png` → `![Kibana home page](media/00-05-kibana-home-page.png)`
+![Kibana home page](media/00-05-kibana-home-page.png)
 
-**Checkpoint:** if this loads, your SIEM is live. Every lab from here forward will ship logs into this Elasticsearch/Kibana instance.
+**Another milestone!:** if this loads, your SIEM is live. Every lab from here forward will ship logs into this Elasticsearch/Kibana instance.
 
 ---
 
@@ -287,8 +367,7 @@ You should land on the Kibana home screen (no login needed, since security is di
 2. If prompted "This virtual machine may have been moved or copied," choose **"I copied it."** (This regenerates the network MAC/UUID so it doesn't collide with anything.)
 3. Before booting, open **VM Settings → Network Adapter** and set it to the **same network as Kali and the ELK VM** (from Part A).
 
-> 📸 **CAPTURE THIS:** Screenshot of Metasploitable2's Network Adapter settings, matching the shared lab network.
-> Save as `00-06-metasploitable-network-adapter.png` → `![Metasploitable network adapter](media/00-06-metasploitable-network-adapter.png)`
+![Metasploitable network adapter](media/00-06-metasploitable-network-adapter.png)
 
 ### D.3 Boot and Log In
 
@@ -299,8 +378,7 @@ You should land on the Kibana home screen (no login needed, since security is di
    Password: msfadmin
    ```
 
-> 📸 **CAPTURE THIS:** Screenshot of the Metasploitable2 login banner/prompt.
-> Save as `00-07-metasploitable-login-banner.png` → `![Metasploitable login banner](media/00-07-metasploitable-login-banner.png)`
+![Metasploitable login banner](media/00-07-metasploitable-login-banner.png)
 
 ### D.4 Set a Static IP (192.168.56.103)
 
@@ -328,7 +406,7 @@ ifconfig eth0
 
 Confirm it now shows `192.168.56.103`.
 
-> **Security note:** Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure. Unlike the ELK-SIEM VM, **do not** add a NAT adapter to this machine and **do not** run `apt update`/`apt upgrade` on it — patching it would remove the very vulnerabilities these labs depend on.
+> **Attention!:** As mentioned in the main repo readme file, Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure. Unlike the ELK-SIEM VM, **do not** add a NAT adapter to this machine and **do not** run `apt update`/`apt upgrade` on it — patching it would remove the very vulnerabilities these labs depend on.
 
 ### D.5 Known Issue: SSH Connections from Kali Will Fail by Default
 
@@ -360,8 +438,7 @@ ssh metasploitable
 
 instead of typing the full `ssh msfadmin@192.168.56.103` — the config applies the compatibility flag automatically.
 
-> 📸 **CAPTURE THIS:** Terminal showing a successful `ssh metasploitable` login using this config.
-> Save as `00-09-ssh-metasploitable-legacy-fix.png` → `![SSH legacy compatibility fix working](media/00-09-ssh-metasploitable-legacy-fix.png)`
+![SSH legacy compatibility fix working](media/00-09-ssh-metasploitable-legacy-fix.png)
 
 ---
 
@@ -383,8 +460,7 @@ ping -c 3 192.168.56.103   # Metasploitable2
 
 All should succeed with 0% packet loss.
 
-> 📸 **CAPTURE THIS:** One terminal screenshot from Kali showing both successful pings (102 and 103).
-> Save as `00-08-connectivity-verification.png` → `![Connectivity verification](media/00-08-connectivity-verification.png)`
+![Connectivity verification](media/00-08-connectivity-verification.png)
 
 ---
 
@@ -400,6 +476,10 @@ Keep this handy — every lab from now on refers back to these three addresses:
 
 ---
 
+**Another Big milestone Acheived!:** You are all set and fit to start the labs. congratulations! You are now a Jedi.
+
+---
+
 ## Troubleshooting
 
 - **Kibana won't load in browser:** confirm Elasticsearch is up first (`curl http://192.168.56.102:9200`) — Kibana depends on it and will refuse to serve until Elasticsearch answers. Check `sudo systemctl status elasticsearch kibana`.
@@ -409,17 +489,3 @@ Keep this handy — every lab from now on refers back to these three addresses:
 - **Metasploitable2 network changes don't stick after reboot:** confirm you edited `/etc/network/interfaces` (not a Netplan file — this OS predates Netplan) and ran the `/etc/init.d/networking restart` command, not `netplan apply`.
 
 ---
-
-## Completion Checklist
-
-- [ ] Kali confirmed on network `192.168.56.101`
-- [ ] Ubuntu Server VM created, static IP `192.168.56.102`
-- [ ] SSH access from Kali → ELK VM working
-- [ ] Elasticsearch installed, responds on port 9200
-- [ ] Kibana installed, loads in browser on port 5601
-- [ ] Metasploitable2 imported, static IP `192.168.56.103`
-- [ ] SSH legacy-algorithm fix applied (`~/.ssh/config` alias `metasploitable` works)
-- [ ] All 3 machines ping each other successfully
-- [ ] All 8 screenshots captured and named per the convention above
-
-Once every box above is checked, you're ready for **Lab 1 — SSH Brute-Force Detection in ELK**.

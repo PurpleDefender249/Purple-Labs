@@ -75,8 +75,7 @@ curl http://192.168.56.103/dvwa/
 
 Stop the capture. **File → Save As** → `baseline.pcapng`.
 
-> 📸 **CAPTURE THIS:** Wireshark showing the completed baseline capture (packet list, any reasonable view).
-> Save as `lab09-01-baseline-capture.png` → `![Baseline traffic capture](media/lab09-01-baseline-capture.png)`
+![Baseline traffic capture](media/lab09-01-baseline-capture.png)
 
 ---
 
@@ -98,8 +97,7 @@ With `baseline.pcapng` open in Wireshark:
 
 Record all of this — you'll need these exact numbers for Part 5's comparison table.
 
-> 📸 **CAPTURE THIS:** The Protocol Hierarchy window for the baseline.
-> Save as `lab09-02-baseline-protocol-hierarchy.png` → `![Baseline protocol hierarchy](media/lab09-02-baseline-protocol-hierarchy.png)`
+![Baseline protocol hierarchy](media/lab09-02-baseline-protocol-hierarchy.png)
 
 ---
 
@@ -144,8 +142,7 @@ Run a couple of commands in the shell (`whoami`, `id`), then disconnect.
 
 Stop the capture. **File → Save As** → `attack.pcapng`.
 
-> 📸 **CAPTURE THIS:** Wireshark showing the completed attack-window capture.
-> Save as `lab09-03-attack-capture.png` → `![Attack window traffic capture](media/lab09-03-attack-capture.png)`
+![Attack window traffic capture](media/lab09-03-attack-capture.png)
 
 ---
 
@@ -157,8 +154,7 @@ Repeat exactly the same three checks from Part 2, now against `attack.pcapng`:
 - **Statistics → Conversations → TCP tab**
 - **Statistics → Endpoints**
 
-> 📸 **CAPTURE THIS:** The Protocol Hierarchy window for the attack window, for direct visual comparison against Part 2's screenshot.
-> Save as `lab09-04-attack-protocol-hierarchy.png` → `![Attack window protocol hierarchy](media/lab09-04-attack-protocol-hierarchy.png)`
+![Attack window protocol hierarchy](media/lab09-04-attack-protocol-hierarchy.png)
 
 ---
 
@@ -177,8 +173,6 @@ This is the lab's central deliverable. Fill in real numbers from Parts 2 and 4:
 
 The port-count and SYN-only-connection rows should show the starkest deviation — baseline traffic touches a small handful of expected ports with fully-completed connections; the attack window touches dozens to thousands of ports (from the scan) with a large proportion of incomplete handshakes.
 
-> 📸 **CAPTURE THIS:** No new screenshot needed — this table is built from data already captured in Parts 2 and 4.
-
 ---
 
 ## Part 6 — Cross-Reference Against Every SIEM Pipeline
@@ -192,10 +186,9 @@ curl "http://192.168.56.102:9200/portscan-logs-*/_count"
 curl "http://192.168.56.102:9200/ssh-auth-logs-*/_count?q=event_outcome:failure"
 ```
 
-Compare the counts before and after this lab's activity (if you noted the counts at the start of this lab, or simply confirm the most recent timestamps align with Part 3.2's attack window).
+Compare the counts before and after this lab's activity (if you noted the counts at the start of this lab, or confirm the most recent timestamps align with Part 3.2's attack window).
 
-> 📸 **CAPTURE THIS:** Terminal showing both count queries.
-> Save as `lab09-05-siem-cross-reference.png` → `![SIEM cross-reference counts](media/lab09-05-siem-cross-reference.png)`
+![SIEM cross-reference counts](media/lab09-05-siem-cross-reference.png)
 
 **Note the asymmetry explicitly in your report:** the reconnaissance and brute-force portions of this attack window are fully visible in your SIEM (Labs 1 and 2's pipelines), while the reverse shell portion is not (consistent with Lab 3's finding) — this lab's packet-level baseline comparison catches **all three** techniques equally, while your log-based SIEM only catches two of them. That contrast is itself one of the most important findings to state plainly in your final report.
 
@@ -205,20 +198,10 @@ Compare the counts before and after this lab's activity (if you noted the counts
 
 This is the final write-up of the course.
 
-- [`Lab9-Investigation-Writeup-Template.docx`](./Lab9-Investigation-Writeup-Template.docx) — the clean, fillable Word document. No instructions inside it.
-- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
+- [`Lab9-Investigation-Writeup-Template.docx`](./Lab9-Investigation-Writeup-Template.docx) — you already know.
+- [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for (try not to use it this time ;) ).
 
 ---
-
-## Media Checklist for This Lab
-
-| Filename | What it shows |
-|---|---|
-| `lab09-01-baseline-capture.png` | Completed baseline traffic capture |
-| `lab09-02-baseline-protocol-hierarchy.png` | Baseline protocol hierarchy breakdown |
-| `lab09-03-attack-capture.png` | Completed attack-window capture |
-| `lab09-04-attack-protocol-hierarchy.png` | Attack-window protocol hierarchy breakdown |
-| `lab09-05-siem-cross-reference.png` | SIEM index counts cross-referenced |
 
 ## Troubleshooting
 
@@ -227,21 +210,14 @@ This is the final write-up of the course.
 - **Nmap `-p-` full scan takes a long time:** this is expected and consistent with Lab 2/4's full scans — let it run to completion, or narrow to `--top-ports 100` if you want a faster capture window without losing the port-diversity signal this lab is measuring.
 - **SIEM counts in Part 6 don't seem to include this session's activity yet:** allow a few seconds for the log pipeline's normal forwarding latency, then re-run the count queries.
 
-## Completion Checklist
+---
 
-- [ ] Baseline traffic captured and saved
-- [ ] Baseline analyzed (protocol hierarchy, conversations, endpoints)
-- [ ] Condensed attack sequence executed (recon + brute-force + reverse shell)
-- [ ] Attack-window traffic captured and saved
-- [ ] Attack window analyzed the same way as the baseline
-- [ ] Comparison table completed with real numbers
-- [ ] SIEM cross-reference completed, visibility asymmetry noted explicitly
-- [ ] All 5 screenshots captured and named per convention
-- [ ] Both `.pcapng` files saved
-- [ ] Final investigation write-up completed using the template
+## COURSE COMPLETE! 🎉
+
+You have successfully hunted the threats, fortified the network, and completed all 9 labs. I hope this training has come as an advantage for your personal career or interest (since I don't give certificates). However, the completion of this course should allow you to practice even more activities with the already obtained baseline technical resources and knowledge. 
+
+Thanks for your time detective, this case is closed.
 
 ---
 
-## Course Complete
 
-Once this checklist is done, all 9 labs are finished. Your course repository now contains a full, working SOC lab environment plus nine documented investigations — a genuinely substantial portfolio piece. See the root [`README.md`](../README.md) for the GitHub publishing checklist.
