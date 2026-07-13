@@ -53,7 +53,7 @@ sudo apt install -y hydra
 ```
 
 > 📸 **CAPTURE THIS:** Terminal output of `hydra -h` showing the help/version banner.
-> Save as `lab01-01-hydra-version-check.png` → `![Hydra installed](media/lab01-01-hydra-version-check.png)`
+> Save as `lab01-01-hydra-version-check.png` → ![Hydra installed](media/lab01-01-hydra-version-check.png)
 
 ---
 
