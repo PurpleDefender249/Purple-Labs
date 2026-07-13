@@ -1,146 +1,523 @@
-# SOC & Threat Hunting Lab Course
-### From Attack Simulation to Detection Engineering — A 9-Lab Hands-On Series
+# Phase 0 — Environment Setup
+### Building the 3-VM SOC Lab: Kali + ELK SIEM + Metasploitable2
 
-![Status](https://img.shields.io/badge/status-in%20progress-yellow)
-![Labs](https://img.shields.io/badge/labs-9-blue)
-![Stack](https://img.shields.io/badge/SIEM-ELK%20Stack-005571)
-![Platform](https://img.shields.io/badge/attacker-Kali%20Linux-557C94)
+## Goal
 
-## About This Course
-
-This is a self-paced, hands-on course for anyone who wants to move from "I know what Nmap and Metasploit do" to **"I can generate an attack, see it land in a SIEM, write the detection rule, and explain the evidence like an analyst."**
-
-Every lab follows the same loop:
-
-**Attack → Log → Detect → Document.**
-
-You will run real attack techniques from Kali Linux against real targets (a dedicated victim VM), watch the resulting evidence arrive in an ELK Stack SIEM, build a detection (query, alert, or dashboard) for it, and write up the finding the way a SOC analyst would.
-
-Each lab also opens with a **"Why this matters in real SOC work"** note tying the exercise to the actual detection-engineering or incident-response problem it mirrors — this course is built to feel like early-career SOC work, not just a checklist of tool commands.
-
-No videos are required — every lab is fully documented in text, with exact commands, expected output, and clearly marked points where **you** capture a screenshot so the write-up has real visual evidence.
-
-## Lab Environment Architecture
-
-Three virtual machines, one isolated internal network:
+By the end of this phase you will have three VMware virtual machines, all on the same isolated internal network, able to reach each other:
 
 ```mermaid
 flowchart LR
-    subgraph VMware Host-Only Network 192.168.56.0/24
-        K["🐉 Kali Linux<br/>Attacker<br/>192.168.56.101"]
-        U["📊 Ubuntu Server<br/>ELK Stack (SIEM)<br/>192.168.56.102"]
-        M["🎯 Metasploitable2<br/>Victim<br/>192.168.56.103"]
+    subgraph "VMware Network — 192.168.56.0/24"
+        K["Kali Linux\n192.168.56.101\n(build in Part 0)"]
+        U["Ubuntu Server + ELK\n192.168.56.102\n(build in Part B/C)"]
+        M["Metasploitable2\n192.168.56.103\n(build in Part D)"]
     end
-    K -- "attacks / scans" --> M
-    M -- "syslog / auth.log" --> U
-    K -- "views dashboards :5601" --> U
-    K -. "some labs: attacker log source too" .-> U
 ```
 
-| Machine | Role | OS | IP (this course) |
-|---|---|---|---|
-| Kali Linux | Attacker / red team box | Kali Rolling 2025.3 | `192.168.56.101` |
-| ELK-SIEM | Log aggregation, detection, dashboards | Ubuntu Server 22.04 LTS | `192.168.56.102` |
-| Metasploitable2 | Intentionally vulnerable victim | Ubuntu 8.04 (custom) | `192.168.56.103` |
+Nothing here is lab-specific — you build this once, and reuse it for all 9 labs.
 
-> Environment build instructions (Phase 0) live in [`00-Environment-Setup/`](./00-Environment-Setup/README.md). **Do this before starting Lab 1.**
->
-> **Log shipping note:** Metasploitable2 runs a 2008-era Ubuntu base too old for modern log-shipping agents (Filebeat, etc.) to run on. Labs that need its logs use its built-in classic syslog daemon (`sysklogd`, via `/etc/syslog.conf`) to forward events over UDP to port 514 on the ELK-SIEM VM, where an `iptables` rule redirects that traffic to a **Logstash** listener on port 5514 (Logstash can't bind port 514 directly without breaking Java's library loading — see Lab 1's troubleshooting section). Logstash then parses and forwards events to Elasticsearch. This is introduced in Lab 1 and reused in later labs.
-
-## Repository Structure
-
-```
-soc-threat-hunting-course/
-├── README.md                              ← you are here
-├── 00-Environment-Setup/
-│   ├── README.md                          ← build the 3-VM lab network + ELK
-│   └── media/                             ← your screenshots for this phase
-├── Lab-01-SSH-Bruteforce-Detection/
-│   ├── README.md
-│   └── media/
-├── Lab-02-Port-Scan-Detection-Engineering/
-├── Lab-03-Reverse-Shell-Network-Detection/
-├── Lab-04-SOC-Investigation-Simulation/
-├── Lab-05-Custom-Log-Based-IDS-Script/
-├── Lab-06-Beaconing-Traffic-Detection/
-├── Lab-07-Exploitation-Visibility-Analysis/
-├── Lab-08-Web-Attack-Detection-SIEM/
-└── Lab-09-Baseline-vs-Attack-Deviation/
-```
-
-Each lab folder is self-contained: its `README.md` is the full manual, `media/` holds only that lab's screenshots, and two files support the final deliverable — a clean, instruction-free `LabN-Investigation-Writeup-Template.docx` to actually fill in, and a `WRITEUP-TEMPLATE.md` guide explaining exactly where in that lab to find the information each field needs. This split keeps the Word document itself presentation-ready with nothing to delete before submitting or publishing it.
-
-## How Media Works in This Course
-
-You never need to record or edit video. As you work through each lab, this course tells you exactly:
-- **What to capture** (a specific terminal output, a Kibana panel, a Wireshark filter result, etc.)
-- **What to name the file** (a consistent convention, e.g. `lab01-03-hydra-bruteforce-running.png`)
-- **Where it goes** (which `media/` folder, and which line in that lab's `README.md` to embed it at — I'll give you the exact Markdown to paste)
-
-Naming convention: `lab<NN>-<step-number>-<short-description>.png` (use `.gif` for anything that needs to show motion, e.g. a live dashboard updating).
-
-## Publishing to GitHub
-
-1. Create a new **public** GitHub repository, e.g. `soc-threat-hunting-labs`.
-2. Push this folder structure as-is.
-3. Add topics/tags on the repo page: `soc`, `threat-hunting`, `siem`, `elk-stack`, `detection-engineering`, `blue-team`, `cybersecurity`.
-4. Pin the repo on your GitHub profile once complete — it doubles as a portfolio piece for SOC/detection-engineering job applications.
-5. Optional polish once all labs are done: add a `LICENSE` (MIT is common for educational content) and a root-level architecture image (export the Mermaid diagram above as PNG via the Mermaid Live Editor if you want a static image too).
-
-## Course Index
-
-| # | Lab Title | Core Skill | Primary Tools |
-|---|---|---|---|
-| 1 | [SSH Brute-Force Detection in ELK](./Lab-01-SSH-Bruteforce-Detection/README.md) | Threshold-based alerting on auth logs | Hydra, Nmap, ELK |
-| 2 | [Port Scan Detection Engineering Lab](./Lab-02-Port-Scan-Detection-Engineering/README.md) | Recon detection, false-positive tuning | Nmap, ELK |
-| 3 | [Reverse Shell Network Detection Study](./Lab-03-Reverse-Shell-Network-Detection/README.md) | Packet-level C2 identification | Netcat, Metasploit, Wireshark |
-| 4 | [End-to-End SOC Investigation Simulation](./Lab-04-SOC-Investigation-Simulation/README.md) | Full attack chain + incident timeline | Nmap, Metasploit, Wireshark, ELK |
-| 5 | [Custom Log-Based Intrusion Detection Script](./Lab-05-Custom-Log-Based-IDS-Script/README.md) | Custom detection engineering | Python, ELK (via Filebeat/HTTP) |
-| 6 | [Beaconing Traffic Detection Lab](./Lab-06-Beaconing-Traffic-Detection/README.md) | Time-series / periodicity detection | Netcat, Wireshark, ELK |
-| 7 | [Exploitation Visibility Analysis](./Lab-07-Exploitation-Visibility-Analysis/README.md) | Log coverage gap analysis | Metasploit, ELK |
-| 8 | [Web Attack Detection in SIEM](./Lab-08-Web-Attack-Detection-SIEM/README.md) | Web log detection engineering | Metasploit (DVWA/Mutillidae), ELK |
-| 9 | [Network Baseline vs Attack Deviation Report](./Lab-09-Baseline-vs-Attack-Deviation/README.md) | Baselining & anomaly documentation | Wireshark, Nmap, ELK |
-
-### Lab Introductions
-
-**Lab 1 — SSH Brute-Force Detection in ELK**
-Simulate a real SSH credential-stuffing attack against the victim VM using Hydra, ingest `auth.log` into ELK via Filebeat, and build a Kibana visualization plus a threshold alert that fires when failed-login velocity crosses a baseline. Goal: understand how volumetric authentication abuse looks in raw logs vs. in a SIEM, and how to tune a threshold so it catches the attack without false-alarming on normal typos.
-
-**Lab 2 — Port Scan Detection Engineering Lab**
-Run multiple Nmap scan types (`-sS`, `-sT`, `-sA`, `-sU`, `-Pn`, timing templates) against the victim and capture them on the wire and in logs. Build ELK detection logic that flags reconnaissance based on unique-port-count-per-source-per-time-window, and deliberately tune it against a "noisy but benign" traffic sample to reduce false positives. Goal: learn the tradeoff between detection sensitivity and analyst alert fatigue.
-
-**Lab 3 — Reverse Shell Network Detection Study**
-Generate multiple reverse shells (Netcat and Metasploit/`msfvenom` payloads) from the victim back to Kali, capture the traffic in Wireshark, and identify the network fingerprints of shell activity — long-lived low-volume connections, unusual destination ports, interactive-shell packet timing. Goal: learn to spot C2 channels from packet behavior alone, without relying on payload signatures.
-
-**Lab 4 — End-to-End SOC Investigation Simulation**
-Chain everything together: scan → exploit → shell → post-exploitation, captured simultaneously in Wireshark and ELK. Then produce a structured incident report with a timeline correlating each attack stage to its detection evidence (or lack of it). Goal: practice the actual SOC/IR deliverable — a timeline a Tier-2 analyst or incident commander could read cold.
-
-**Lab 5 — Custom Log-Based Intrusion Detection Script**
-Write a Python script that tails `auth.log` in real time, detects brute-force patterns using your own logic (not a SIEM query), and forwards structured JSON alerts into ELK over HTTP/Filebeat. Goal: understand detection engineering from first principles — what a SIEM's built-in correlation is actually doing under the hood — and produce a small reusable tool for your portfolio.
-
-**Lab 6 — Beaconing Traffic Detection Lab**
-Simulate periodic C2-style check-in traffic (a scripted Netcat loop) and use Wireshark statistics plus an ELK time-bucket query to detect the beacon interval, jitter, and regularity. Goal: learn interval-based/statistical detection, which catches C2 that no signature ever will.
-
-**Lab 7 — Exploitation Visibility Analysis**
-Exploit a vulnerable service on the victim (e.g. via Metasploit) and deliberately compare three views of the same event: the raw application/system log, the default ELK ingestion, and a purpose-built detection. Goal: learn to identify and articulate **monitoring gaps** — a core SOC-maturity skill that's rarely taught directly.
-
-**Lab 8 — Web Attack Detection in SIEM**
-Simulate common web attacks (SQLi, XSS, directory traversal, encoded payloads) against a vulnerable web app on the victim VM, ingest web server logs into ELK, and build detection queries for suspicious parameters, HTTP error-code spikes, and encoding anomalies (e.g. `%27`, `<script`, `../../`). Goal: extend detection engineering skills from network/auth logs into the web layer.
-
-**Lab 9 — Network Baseline vs Attack Deviation Report**
-Capture a clean traffic baseline on the lab network, then run a mix of attacks from earlier labs, and produce a before/after report documenting exactly how port usage, packet timing, and flow volume deviated from baseline. Goal: this is the "capstone" lab — it demonstrates the foundational SOC skill of knowing what *normal* looks like before you can recognize *abnormal*.
+**Assumed starting point:** a Windows (or other) host machine with nothing installed yet — no VMware, no VMs, no tools. Every step below is shown from scratch, starting with VMware itself.
 
 ---
 
-## Progress Tracker
+## Part 0 — Install VMware, Configure the Network, and Deploy Kali Linux
 
-- [x] Phase 0 — Environment Setup (Kali + ELK VM + Metasploitable2)
-- [x] Lab 1 — SSH Brute-Force Detection in ELK
-- [x] Lab 2 — Port Scan Detection Engineering Lab
-- [x] Lab 3 — Reverse Shell Network Detection Study
-- [x] Lab 4 — End-to-End SOC Investigation Simulation
-- [x] Lab 5 — Custom Log-Based Intrusion Detection Script
-- [ ] Lab 6 — Beaconing Traffic Detection Lab
-- [ ] Lab 7 — Exploitation Visibility Analysis
-- [ ] Lab 8 — Web Attack Detection in SIEM
-- [ ] Lab 9 — Network Baseline vs Attack Deviation Report
+### 0.1 Install VMware Workstation
+
+1. Go to https://www.vmware.com/products/workstation-pro.html (VMware Workstation Pro is now free for personal use) or https://www.vmware.com/products/workstation-player.html for the lighter free Player edition.
+2. Download the Windows installer.
+3. Run the installer, accept the license agreement, and use the default install location and options unless you have a specific reason to change them.
+4. Restart your host machine if prompted.
+5. Launch **VMware Workstation** once to confirm it opens correctly — you should land on its "Home" tab with no virtual machines listed yet.
+
+> 📸 **CAPTURE THIS:** Screenshot of VMware Workstation's Home tab after a fresh install, showing no VMs yet.
+> Save as `00-00a-vmware-installed.png` → `![VMware Workstation installed](media/00-00a-vmware-installed.png)`
+
+### 0.2 Configure the Shared Virtual Network
+
+All three VMs in this course need to sit on the exact same isolated virtual network, with a specific subnet (`192.168.56.0/24`) — this must be set up **before** creating any VM, so every VM you build afterward can simply select it.
+
+1. In VMware Workstation, go to **Edit → Virtual Network Editor**. (If the options are grayed out, click **Change Settings** at the bottom — this requires administrator rights.)
+2. Look for an existing **Host-only** network (commonly named `VMnet1` or `VMnet2`). If none exists, click **Add Network...** and choose an unused VMnet number.
+3. Select that network, set its type to **Host-only** (uncheck "Connect a host virtual adapter to this network" is fine either way — leaving it checked lets your physical host machine also reach this network directly, which can be convenient but isn't required).
+4. Click **Subnet IP** / set the subnet manually to:
+   ```
+   192.168.56.0
+   ```
+   with subnet mask `255.255.255.0`.
+5. Make sure **"Use local DHCP service to distribute IP addresses to VMs"** is **unchecked** — every VM in this course uses a manually assigned static IP, not DHCP, so a competing DHCP server on this network would only cause confusion later.
+6. Click **Apply**, then **OK**.
+
+> 📸 **CAPTURE THIS:** Screenshot of the Virtual Network Editor showing this Host-only network configured with subnet `192.168.56.0/24`.
+> Save as `00-00b-virtual-network-editor.png` → `![Virtual Network Editor configured](media/00-00b-virtual-network-editor.png)`
+
+Note which VMnet number you configured (e.g. `VMnet2`) — you'll select this exact network for all three VMs in this course.
+
+### 0.3 Download and Deploy the Kali Linux VM
+
+Rather than installing Kali from an ISO (a much longer process), Kali's team publishes ready-to-run VMware images, which is what this course uses.
+
+1. Go to https://www.kali.org/get-kali/#kali-virtual-machines
+2. Under **VMware**, download the 64-bit VMware image (a `.7z` archive).
+3. Extract the archive using [7-Zip](https://www.7-zip.org/) (Windows doesn't open `.7z` natively) — right-click the downloaded file → **7-Zip → Extract Here**, once 7-Zip is installed.
+4. In VMware Workstation: **File → Open**, browse into the extracted folder, and select the `.vmx` file.
+5. If prompted **"This virtual machine may have been moved or copied"**, choose **"I copied it"** (this regenerates the VM's network identity so it doesn't collide with anything).
+6. Before powering on, open **VM Settings → Network Adapter** and set it to **Custom: Specific virtual network** → select the exact VMnet you configured in Part 0.2.
+
+> 📸 **CAPTURE THIS:** Screenshot of Kali's Network Adapter settings showing the correct Custom VMnet selected.
+> Save as `00-00c-kali-network-adapter.png` → `![Kali network adapter configured](media/00-00c-kali-network-adapter.png)`
+
+7. Power on the VM. Default credentials: username `kali`, password `kali`.
+
+### 0.4 Set Kali's Static IP
+
+Kali's prebuilt image defaults to DHCP. Set a static IP matching this course's addressing scheme.
+
+Open a terminal in Kali and check the interface name:
+
+```bash
+ip a
+```
+
+Edit the Netplan config (adjust the interface name — likely `eth0` — to match what `ip a` actually showed):
+
+```bash
+sudo nano /etc/netplan/01-network-manager-all.yaml
+```
+
+Set it to:
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [192.168.56.101/24]
+      nameservers:
+        addresses: [8.8.8.8]
+```
+
+Apply it:
+
+```bash
+sudo netplan apply
+ip a
+```
+
+Confirm it now shows `192.168.56.101`.
+
+> 📸 **CAPTURE THIS:** Terminal showing the applied static IP.
+> Save as `00-00d-kali-static-ip.png` → `![Kali static IP configured](media/00-00d-kali-static-ip.png)`
+
+**Checkpoint:** you now have a working Kali VM at `192.168.56.101` on your dedicated lab network. The rest of this document (Parts A onward) builds the remaining two VMs on the same network.
+
+---
+
+## Part A — Confirm the VMware Network
+
+Your Kali VM already has IP `192.168.56.101/24`, which tells us which VMware virtual network it's on. We need the two new VMs on that **exact same** network.
+
+1. Open **VMware** → right-click your **Kali VM** → **Settings** → **Network Adapter**.
+2. Note which option is selected: usually either **Host-only**, or **Custom (VMnet_)** with a specific VMnet number. Write down the exact setting/name.
+
+> 📸 **CAPTURE THIS:** Screenshot of Kali's Network Adapter settings screen showing which network it's on.
+> Save as `00-01-kali-network-adapter-settings.png` → embed here:
+> `![Kali network adapter settings](media/00-01-kali-network-adapter-settings.png)`
+
+3. Keep this exact setting in mind — you will select the **identical** option when creating the next two VMs in Parts B and D.
+
+
+---
+
+## Part B — Create the Ubuntu Server VM (future ELK host)
+
+### B.1 Download Ubuntu Server
+
+1. On your **host machine** (not Kali), go to https://ubuntu.com/download/server
+2. Download **Ubuntu Server 22.04.x LTS** (the `.iso` file). This is a long-term-support release, which matters for package stability with the Elastic Stack.
+
+### B.2 Create the VM in VMware
+
+1. VMware → **File → New Virtual Machine → Typical → Installer disc image (.iso)** → browse to the Ubuntu ISO you downloaded.
+2. Guest OS: **Linux → Ubuntu 64-bit**.
+3. VM name: `ELK-SIEM`. Choose a storage location.
+4. **Disk size: 40 GB minimum** (Elasticsearch indices grow fast even in a lab).
+5. Hardware customization before finishing:
+   - **RAM: 4 GB minimum** (6–8 GB strongly preferred if your host has it — Elasticsearch alone wants ~2 GB heap).
+   - **CPU: 2 cores minimum.**
+   - **Network Adapter:** set to the **same option you recorded in Part A** (e.g. Host-only / the same VMnet).
+
+> 📸 **CAPTURE THIS:** Screenshot of the VM hardware customization screen (RAM/CPU/Network settings) before install.
+> Save as `00-02-ubuntu-vm-hardware-settings.png` → `![Ubuntu VM hardware settings](media/00-02-ubuntu-vm-hardware-settings.png)`
+
+### B.3 Install Ubuntu Server
+
+1. Boot the VM, run through the Ubuntu Server installer:
+   - Language/keyboard: defaults are fine.
+   - Network: leave on DHCP for now — we'll fix the IP after install so it's guaranteed static.
+   - Storage: "Use entire disk," default LVM layout is fine.
+   - Profile setup: create a user, e.g. username `socadmin`. **Remember this password.**
+   - **Important:** on the "SSH Setup" screen, tick **Install OpenSSH server**. You'll want to SSH into this box from Kali instead of using the VMware console.
+   - Skip featured server snaps.
+2. Let it install, reboot when prompted (remove installation media if asked).
+3. Log in at the console once to confirm it boots, then run:
+   ```bash
+   ip a
+   ```
+   Note the IP DHCP assigned (should be in the `192.168.56.x` range).
+
+### B.4 Set a Static IP (192.168.56.102)
+
+Ubuntu 22.04 uses Netplan. Edit the config:
+
+```bash
+sudo nano /etc/netplan/00-installer-config.yaml
+```
+
+Replace its contents with (adjust `eth0`/`ens33` to match your actual interface name from `ip a`):
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: no
+      addresses: [192.168.56.102/24]
+      nameservers:
+        addresses: [8.8.8.8]
+```
+
+Apply it:
+
+```bash
+sudo netplan apply
+ip a
+```
+
+Confirm it now shows `192.168.56.102`.
+
+### B.5 Connect from Kali via SSH (recommended from here on)
+
+From your Kali terminal:
+
+```bash
+ssh socadmin@192.168.56.102
+```
+
+> 📸 **CAPTURE THIS:** Terminal screenshot from Kali showing a successful SSH login to the Ubuntu VM.
+> Save as `00-03-ssh-into-ubuntu-elk.png` → `![SSH into Ubuntu ELK VM](media/00-03-ssh-into-ubuntu-elk.png)`
+
+All commands in Part C are run **on this Ubuntu VM** (via this SSH session).
+
+---
+
+## Part C — Install the ELK Stack on the Ubuntu VM
+
+We'll install **Elasticsearch** (storage/search engine) and **Kibana** (dashboards/UI). Logstash isn't needed yet — for these labs, log shipping is handled by **Filebeat** (lightweight shipper), installed per-lab when needed. For this lab course, we disable Elastic's built-in TLS/security layer (`xpack.security`) since this is an isolated offline lab, not production — this avoids certificate setup that would otherwise block beginners. This is called out explicitly so it's never mistaken for a production practice.
+
+### C.0 Enable Temporary Internet Access (Second NAT Adapter)
+
+Your ELK-SIEM VM's only network adapter is **Host-only (VMnet2)**, static IP `192.168.56.102` — correct for talking to Kali and Metasploitable2, but Host-only networks are deliberately isolated from the internet. `apt` needs internet access to download Elasticsearch/Kibana. Add a **second** adapter just for this:
+
+1. Shut down the VM: `sudo shutdown now`
+2. VMware → **ELK-SIEM → Settings → Add... → Network Adapter → Finish**
+3. Select the new adapter → set connection type to **NAT**
+4. Power the VM back on
+5. **Important:** back in Part B.4 you replaced the entire Netplan config to add the static IP on `ens33`. That file has no entry for this new adapter, so Netplan leaves it down by default — it won't pick up an address on its own. Add it explicitly:
+   ```bash
+   sudo nano /etc/netplan/00-installer-config.yaml
+   ```
+   Make sure the file contains **both** interfaces:
+   ```yaml
+   network:
+     version: 2
+     ethernets:
+       ens33:
+         dhcp4: no
+         addresses: [192.168.56.102/24]
+         nameservers:
+           addresses: [8.8.8.8]
+       ens37:
+         dhcp4: yes
+   ```
+   (Confirm your new adapter's actual name via `ip a` first — it may not be exactly `ens37`.)
+6. Apply and verify:
+   ```bash
+   sudo netplan apply
+   ip a
+   ping -c 3 8.8.8.8
+   ```
+
+Your original static IP (`192.168.56.102` on `ens33`) is untouched — this NAT adapter is purely for package installation. Keep it attached; there's no harm leaving it on for the rest of the course, but it's not part of the "lab network" the other VMs communicate over.
+
+> 📸 **CAPTURE THIS:** Screenshot of `ip a` showing both interfaces (static Host-only + DHCP NAT).
+> Save as `00-03b-elk-dual-network-adapters.png` → `![ELK dual network adapters](media/00-03b-elk-dual-network-adapters.png)`
+
+### C.1 Prerequisites
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y apt-transport-https curl gnupg
+```
+
+### C.2 Add the Elastic Package Repository
+
+```bash
+curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic.gpg
+echo "deb [signed-by=/usr/share/keyrings/elastic.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+sudo apt update
+```
+
+### C.3 Install and Configure Elasticsearch
+
+```bash
+sudo apt install -y elasticsearch
+```
+
+Edit the config:
+
+```bash
+sudo nano /etc/elasticsearch/elasticsearch.yml
+```
+
+**Note on Elasticsearch 8.x:** the installer automatically appends a block near the bottom of this file titled `----- BEGIN SECURITY AUTO CONFIGURATION -----` containing TLS certificate paths and enrollment settings. This is normal — every 8.x install does this. For this lab, we replace that entire block, since managing certificates adds setup complexity with no benefit on an isolated training network.
+
+**Delete everything** from `#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------` through `#----------------------- END SECURITY AUTO CONFIGURATION -------------------------` (both marker lines included).
+
+The rest of the file is almost entirely comments (lines starting with `#`) — leave those as they are. You only need to make sure these **active** (non-`#`) lines exist somewhere in the file. The safest approach: select the entire file contents in nano (or just delete everything) and replace it with exactly this:
+
+```yaml
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: 192.168.56.102
+http.port: 9200
+discovery.type: single-node
+
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+```
+
+> ⚠️ **Common mistake:** if you only delete the security auto-config block and leave the commented template above it, `path.data` and `path.logs` remain commented out (`#path.data: ...`) and Elasticsearch will fall back to writing inside `/usr/share/elasticsearch/data`, which isn't writable by the `elasticsearch` user — it will crash with `AccessDeniedException`. Replacing the whole file with the block above avoids this entirely.
+
+Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
+
+Start it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now elasticsearch
+```
+
+Verify (wait ~30 seconds for first boot):
+
+```bash
+curl http://192.168.56.102:9200
+```
+
+You should get back a JSON block with `"cluster_name"` and version info.
+
+> 📸 **CAPTURE THIS:** Terminal screenshot of the `curl` output above showing Elasticsearch responding.
+> Save as `00-04-elasticsearch-curl-verify.png` → `![Elasticsearch verify](media/00-04-elasticsearch-curl-verify.png)`
+
+### C.4 Install and Configure Kibana
+
+```bash
+sudo apt install -y kibana
+sudo nano /etc/kibana/kibana.yml
+```
+
+Set:
+
+```yaml
+server.host: "192.168.56.102"
+server.port: 5601
+elasticsearch.hosts: ["http://192.168.56.102:9200"]
+```
+
+Start it:
+
+```bash
+sudo systemctl enable --now kibana
+```
+
+### C.5 Open the Firewall (if `ufw` is active)
+
+```bash
+sudo ufw allow 9200/tcp
+sudo ufw allow 5601/tcp
+sudo ufw allow 5044/tcp   # for Filebeat, used in later labs
+sudo ufw status
+```
+
+### C.6 Verify Kibana From a Browser
+
+From your **Kali VM**, open Firefox and go to:
+
+```
+http://192.168.56.102:5601
+```
+
+You should land on the Kibana home screen (no login needed, since security is disabled for this lab).
+
+> 📸 **CAPTURE THIS:** Screenshot of the Kibana home page loaded in the browser.
+> Save as `00-05-kibana-home-page.png` → `![Kibana home page](media/00-05-kibana-home-page.png)`
+
+**Checkpoint:** if this loads, your SIEM is live. Every lab from here forward will ship logs into this Elasticsearch/Kibana instance.
+
+---
+
+## Part D — Deploy Metasploitable2 (Victim VM)
+
+### D.1 Download
+
+1. On your host machine: https://sourceforge.net/projects/metasploitable/ → download `Metasploitable2.zip`.
+2. Extract it. Inside you'll find a `Metasploitable.vmx` file among others.
+
+### D.2 Import into VMware
+
+1. VMware → **File → Open** → browse to the extracted folder → select `Metasploitable.vmx`.
+2. If prompted "This virtual machine may have been moved or copied," choose **"I copied it."** (This regenerates the network MAC/UUID so it doesn't collide with anything.)
+3. Before booting, open **VM Settings → Network Adapter** and set it to the **same network as Kali and the ELK VM** (from Part A).
+
+> 📸 **CAPTURE THIS:** Screenshot of Metasploitable2's Network Adapter settings, matching the shared lab network.
+> Save as `00-06-metasploitable-network-adapter.png` → `![Metasploitable network adapter](media/00-06-metasploitable-network-adapter.png)`
+
+### D.3 Boot and Log In
+
+1. Power on the VM. It boots to a text login prompt (no GUI — this is intentional, it's a deliberately old/vulnerable Ubuntu 8.04 base).
+2. Default credentials:
+   ```
+   Login: msfadmin
+   Password: msfadmin
+   ```
+
+> 📸 **CAPTURE THIS:** Screenshot of the Metasploitable2 login banner/prompt.
+> Save as `00-07-metasploitable-login-banner.png` → `![Metasploitable login banner](media/00-07-metasploitable-login-banner.png)`
+
+### D.4 Set a Static IP (192.168.56.103)
+
+Metasploitable2's Ubuntu 8.04 predates Netplan — it uses the classic `ifupdown` system.
+
+```bash
+sudo nano /etc/network/interfaces
+```
+
+Replace the `eth0` block with:
+
+```
+auto eth0
+iface eth0 inet static
+    address 192.168.56.103
+    netmask 255.255.255.0
+```
+
+Apply it:
+
+```bash
+sudo /etc/init.d/networking restart
+ifconfig eth0
+```
+
+Confirm it now shows `192.168.56.103`.
+
+> **Security note:** Metasploitable2 is deliberately full of unpatched vulnerabilities. It must **never** be exposed to a bridged/NAT network with real internet access — only ever on this closed host-only lab network. Double-check its network adapter setting if you're ever unsure. Unlike the ELK-SIEM VM, **do not** add a NAT adapter to this machine and **do not** run `apt update`/`apt upgrade` on it — patching it would remove the very vulnerabilities these labs depend on.
+
+### D.5 Known Issue: SSH Connections from Kali Will Fail by Default
+
+Metasploitable2's SSH server only offers a legacy host-key type (`ssh-rsa`). Modern OpenSSH clients (including Kali 2025.3's) reject this by default for security reasons, so a plain `ssh msfadmin@192.168.56.103` will fail with `Unable to negotiate... no matching host key type found`. This isn't a network issue — it's a client compatibility policy, and it will affect every future lab that needs interactive SSH into this VM.
+
+**Note:** Metasploitable2's SSH banner also lists `ssh-dss`, but don't add that to any config — modern OpenSSH (9.8+) has removed DSA support entirely, and including `ssh-dss` in an option string causes a hard parse error (`Bad key types`). Allowing `ssh-rsa` alone is sufficient.
+
+**Fix it once, permanently, from Kali:**
+
+```bash
+nano ~/.ssh/config
+```
+
+Add:
+
+```
+Host metasploitable
+    HostName 192.168.56.103
+    User msfadmin
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+```
+
+Save and exit. From now on, connect with:
+
+```bash
+ssh metasploitable
+```
+
+instead of typing the full `ssh msfadmin@192.168.56.103` — the config applies the compatibility flag automatically.
+
+> 📸 **CAPTURE THIS:** Terminal showing a successful `ssh metasploitable` login using this config.
+> Save as `00-09-ssh-metasploitable-legacy-fix.png` → `![SSH legacy compatibility fix working](media/00-09-ssh-metasploitable-legacy-fix.png)`
+
+---
+
+## Part E — Verify All Three Machines Can See Each Other
+
+From **Kali**:
+
+```bash
+ping -c 3 192.168.56.102   # ELK VM
+ping -c 3 192.168.56.103   # Metasploitable2
+```
+
+From the **ELK VM**:
+
+```bash
+ping -c 3 192.168.56.101   # Kali
+ping -c 3 192.168.56.103   # Metasploitable2
+```
+
+All should succeed with 0% packet loss.
+
+> 📸 **CAPTURE THIS:** One terminal screenshot from Kali showing both successful pings (102 and 103).
+> Save as `00-08-connectivity-verification.png` → `![Connectivity verification](media/00-08-connectivity-verification.png)`
+
+---
+
+## Environment Reference Card
+
+Keep this handy — every lab from now on refers back to these three addresses:
+
+| Machine | IP | Credentials | Purpose |
+|---|---|---|---|
+| Kali Linux | `192.168.56.101` | (yours) | Attacker box, runs all offensive tools |
+| ELK-SIEM (Ubuntu) | `192.168.56.102` | `socadmin` / (yours) | Kibana: `http://192.168.56.102:5601` |
+| Metasploitable2 | `192.168.56.103` | `msfadmin` / `msfadmin` | Victim — intentionally vulnerable |
+
+---
+
+## Troubleshooting
+
+- **Kibana won't load in browser:** confirm Elasticsearch is up first (`curl http://192.168.56.102:9200`) — Kibana depends on it and will refuse to serve until Elasticsearch answers. Check `sudo systemctl status elasticsearch kibana`.
+- **Elasticsearch fails to start / exits immediately:** almost always low memory. Check `sudo journalctl -u elasticsearch -n 50` — if you see OOM-related errors, increase the VM's RAM or cap the JVM heap in `/etc/elasticsearch/jvm.options.d/heap.options` (e.g. `-Xms1g` / `-Xmx1g`).
+- **`apt update` fails with "Temporary failure resolving..." :** your VM's only adapter is Host-only, which has no internet route by design. Add a second NAT adapter (see Part C.0) — keep the original Host-only static IP untouched.
+- **Can't ping between VMs:** almost always a network adapter mismatch — re-check Part A/B.2/D.2, all three VMs must use the exact same VMware network setting.
+- **Metasploitable2 network changes don't stick after reboot:** confirm you edited `/etc/network/interfaces` (not a Netplan file — this OS predates Netplan) and ran the `/etc/init.d/networking restart` command, not `netplan apply`.
+
+---
+
+## Completion Checklist
+
+- [ ] VMware Workstation installed
+- [ ] Shared virtual network configured (`192.168.56.0/24`, Host-only, DHCP disabled)
+- [ ] Kali Linux VM deployed from the official VMware image
+- [ ] Kali confirmed on network `192.168.56.101`
+- [ ] Ubuntu Server VM created, static IP `192.168.56.102`
+- [ ] SSH access from Kali → ELK VM working
+- [ ] Elasticsearch installed, responds on port 9200
+- [ ] Kibana installed, loads in browser on port 5601
+- [ ] Metasploitable2 imported, static IP `192.168.56.103`
+- [ ] SSH legacy-algorithm fix applied (`~/.ssh/config` alias `metasploitable` works)
+- [ ] All 3 machines ping each other successfully
+- [ ] All 12 screenshots captured and named per the convention above
+
+Once every box above is checked, you're ready for **Lab 1 — SSH Brute-Force Detection in ELK**.
