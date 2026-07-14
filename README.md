@@ -1,4 +1,4 @@
-# SOC & Threat Hunting Lab Course
+# 🟣 Purple Labs
 ### From Attack Simulation to Detection Engineering — A 9-Lab Hands-On Series
 
 ![Status](https://img.shields.io/badge/status-in%20progress-yellow)
@@ -84,7 +84,7 @@ Each lab folder is self-contained: its `README.md` is the full manual, `media/` 
 | 8 | [Web Attack Detection in SIEM](./Lab-08-Web-Attack-Detection-SIEM/README.md) | Web log detection engineering | Metasploit (DVWA/Mutillidae), ELK |
 | 9 | [Network Baseline vs Attack Deviation Report](./Lab-09-Baseline-vs-Attack-Deviation/README.md) | Baselining & anomaly documentation | Wireshark, Nmap, ELK |
 
-### Lab Introductions
+### Lab Descriptions
 
 **Lab 1 — SSH Brute-Force Detection in ELK**
 Simulate a real SSH credential-stuffing attack against the victim VM using Hydra, ingest `auth.log` into ELK via Filebeat, and build a Kibana visualization plus a threshold alert that fires when failed-login velocity crosses a baseline. Goal: understand how volumetric authentication abuse looks in raw logs vs. in a SIEM, and how to tune a threshold so it catches the attack without false-alarming on normal typos.
@@ -119,7 +119,7 @@ Capture a clean traffic baseline on the lab network, then run a mix of attacks f
 
 ---
 
-## Legal Disclaimer & Usage Terms
+## ⚖️ Legal Disclaimer & Usage Terms
 
 1. The information, scripts, and attack simulations contained in this repository are provided strictly for educational, research, and defensive security training purposes. This course is designed to teach defensive professionals how to recognize malicious activity and build robust monitoring rules. It does not encourage, facilitate, or promote unauthorized computer access or malicious hacking.
 
@@ -130,10 +130,16 @@ Capture a clean traffic baseline on the lab network, then run a mix of attacks f
 4. This course is the original work of Elmutaz Hussain. The author assumes absolute no liability and is not responsible for any misuse, damage, data loss, legal consequences, or administrative actions resulting from the implementation or adaptation of the concepts, scripts, or tools presented herein. You engage with these practical materials entirely at your own risk.
 
 5. **Permitted Usage:**
-**For Learners:** You are fully encouraged to clone this repository, follow the guides, and practice the labs for personal growth and educational portfolio building.
 
-**For Reviewers:** Peer reviews, feedback, and constructive critiques are highly welcome!
+   **For Learners:** You are fully encouraged to clone this repository, follow the guides, and practice the labs for personal growth and educational portfolio building.
 
-**Restrictions:** You may not copy, redistribute, republish, or host this material on other platforms, websites, or commercial courses without explicit written permission from the author. If you reference this work in blogs or portfolios, please provide a direct link back to this GitHub repository.
+   **For Reviewers:** Peer reviews, feedback, and constructive critiques are highly welcome!
+
+   **Restrictions:** You may not copy, redistribute, republish, or host this material on other platforms, websites, or commercial courses without explicit written permission from the author. If you reference this work in blogs or portfolios, a credit/link or reference is appreciated — see `CITATION.cff` for the preferred citation format.
+
+---
+
+**Author:** Elmutaz Hussain — [LinkedIn](https://www.linkedin.com/in/elmutaz-hussain-809b33237/) — [GitHub](https://github.com/PurpleDefender249)
+**License:** CC BY-NC-ND 4.0 — free to use for personal learning and practice, with attribution; no commercial use, no redistribution of modified versions. See `LICENSE.md` for full terms.
 
 ---

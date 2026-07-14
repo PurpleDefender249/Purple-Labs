@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use or reference this course, please cite it as below."
+title: "Purple Labs Course"
+type: dataset
+authors:
+  - First-names: "Elmutaz"
+    Last-names: "Hussain"
+repository-code: "https://github.com/PurpleDefender249/Purple-Labs.git"
+url: "https://github.com/PurpleDefender249/Purple-Labs"
+license: "CC-BY-NC-ND-4.0"
+version: "1.0.0"
+date-released: "2026-07-14"
+keywords:
+  - soc
+  - threat-hunting
+  - siem
+  - elk-stack
+  - detection-engineering
+  - blue-team
+  - cybersecurity
+  - incident-response
+abstract: >
+  A 9-lab hands-on course teaching SOC and threat-hunting skills through an
+  Attack → Log → Detect → Document methodology, using a Kali Linux attacker
+  VM, an ELK Stack SIEM, and a Metasploitable2 victim VM. Covers SSH
+  brute-force detection, port scan detection engineering, reverse shell
+  network analysis, end-to-end incident investigation, custom Python-based
+  intrusion detection, beaconing traffic detection, exploitation visibility
+  analysis, web attack detection, and network baseline deviation reporting.
