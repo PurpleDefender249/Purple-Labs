@@ -474,11 +474,13 @@ Keep this handy — every lab from now on refers back to these three addresses:
 | ELK-SIEM (Ubuntu) | `192.168.56.102` | `socadmin` / (yours) | Kibana: `http://192.168.56.102:5601` |
 | Metasploitable2 | `192.168.56.103` | `msfadmin` / `msfadmin` | Victim — intentionally vulnerable |
 
----
-
-**Another Big milestone Acheived!:** You are all set and fit to start the labs. congratulations! You are now a Jedi.
 
 ---
+
+**Congratulations! You are now a Jedi!:** You are all set and fit to start the labs. May the force be with you.
+
+---
+
 
 ## Troubleshooting
 

@@ -281,7 +281,7 @@ url.original.keyword: *%27* or url.original.keyword: *%3C* or url.original.keywo
 
 ### 5.3 HTTP Error Spikes
 
-**Visualize Library → Create visualization → Lens**. Data view `Web Access Logs`. Chart type **Bar vertical**. Horizontal axis `@timestamp` (Minute interval). Vertical axis **Count of records**, with a filter `http.response.status_code >= 400`. Title: **HTTP Error Responses Over Time**. **Save**.
+**Visualize Library → Create visualization → Lens**. Data view `Web Access Logs`. Chart type **Bar vertical**. Horizontal axis `@timestamp` (Minute interval). Vertical axis **Count of records**, with a filter `http.response.status_code >= 400` (sometimes 200). Title: **HTTP Error Responses Over Time**. **Save**.
 
 ![HTTP error spike chart](media/lab08-08-http-error-spike-chart.png)
 

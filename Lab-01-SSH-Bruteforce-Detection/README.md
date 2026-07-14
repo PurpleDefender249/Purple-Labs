@@ -154,8 +154,6 @@ sudo apt install -y iptables-persistent
 
 When prompted **"Save current IPv4 rules?"**, choose **Yes**. (You can say No to the IPv6 prompt — this lab only uses IPv4.)
 
-![iptables port redirect configured](media/lab01-03b-iptables-port-redirect.png)
-
 ---
 
 ## Part 4 — Configure Metasploitable2 to Forward Auth Logs
@@ -209,7 +207,7 @@ Save and exit.
 sudo /etc/init.d/sysklogd restart
 ```
 
-![syslog forwarding configured](media/lab01-04-syslog-forwarding-config.png)
+![syslog forwarding configured](media/lab01-04-rsyslog-forwarding-config.png)
 
 ---
 
@@ -394,16 +392,12 @@ sudo systemctl restart kibana
 
 Wait ~20–30 seconds, then reload the Rules page — the warning should be gone.
 
-![Kibana encryption keys configured](media/lab01-10b-kibana-encryption-keys.png)
-
 If the connector picker later shows options grayed out as "Platinum license required," activate Elasticsearch's free 30-day trial license, which unlocks them (this is unrelated to the encryption key, but both are one-time setup steps for Alerting):
 
 ```bash
 curl -X POST "http://192.168.56.102:9200/_license/start_trial?acknowledge=true&pretty"
 sudo systemctl restart kibana
 ```
-
-![Trial license activated](media/lab01-10c-elasticsearch-trial-license.png)
 
 ### 8.1 Create the Rule
 
@@ -437,11 +431,13 @@ This is the write-up a real analyst would produce. Two separate files in this la
 - [`Lab1-Investigation-Writeup-Template.docx`](./Lab1-Investigation-Writeup-Template.docx) — A clean, fillable Word document. Fill it in directly or modify as you like which I highly recommend.
 - [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field in the `.docx` file is asking for.
 
+
 ---
 
 **Welcome to the club red piller!:** I know most of you will skip the documentation part (although it is how they make sure you have deserved your salary in a real job). However, you have officially taken your first steps into the real action zone!, Proceed to lab 2.
 
 ---
+
 
 ## Troubleshooting
 

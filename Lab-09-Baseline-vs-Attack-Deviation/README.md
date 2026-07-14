@@ -210,6 +210,7 @@ This is the final write-up of the course.
 - **Nmap `-p-` full scan takes a long time:** this is expected and consistent with Lab 2/4's full scans — let it run to completion, or narrow to `--top-ports 100` if you want a faster capture window without losing the port-diversity signal this lab is measuring.
 - **SIEM counts in Part 6 don't seem to include this session's activity yet:** allow a few seconds for the log pipeline's normal forwarding latency, then re-run the count queries.
 
+
 ---
 
 ## COURSE COMPLETE! 🎉

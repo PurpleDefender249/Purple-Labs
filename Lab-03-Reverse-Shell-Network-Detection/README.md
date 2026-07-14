@@ -265,11 +265,13 @@ Standalone files, same pattern as prior labs:
 - [`Lab3-Investigation-Writeup-Template.docx`](./Lab3-Investigation-Writeup-Template.docx) — the clean, fillable Word document.
 - [`WRITEUP-TEMPLATE.md`](./WRITEUP-TEMPLATE.md) — a guide explaining exactly where in this lab to find the information each field is asking for.
 
----
-
-**Stand proud Jedi, you have reached a new milestone!:** You have successfully mapped the attacker's persistence mechanisms. To the next rabbit hole!.
 
 ---
+
+**BLOCK INCREASED TO 97!:** Stand proud Dragonborn, you have successfully mapped the attacker's persistence mechanisms. To your next quest!.
+
+---
+
 
 ## Troubleshooting
 
