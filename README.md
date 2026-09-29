@@ -1,7 +1,7 @@
 # 🟣 Purple Labs
 ### From Attack Simulation to Detection Engineering — A 9-Lab Hands-On Series
 
-![Status](https://img.shields.io/badge/status-in%20progress-yellow)
+![Status](https://img.shields.io/badge/status-Done-green)
 ![Labs](https://img.shields.io/badge/labs-9-blue)
 ![Stack](https://img.shields.io/badge/SIEM-ELK%20Stack-005571)
 ![Platform](https://img.shields.io/badge/attacker-Kali%20Linux-557C94)
